@@ -1,0 +1,26 @@
+# Conda environment for the SAM 2 x Sen4AgriNet project.
+# NOTE: the working env on this machine is `deeplearning`
+# (interpreter: /Users/Johanna/miniforge3/envs/deeplearning/bin/python).
+# This file documents the key dependencies for reproducibility.
+name: sen4sam
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - pip
+  - numpy
+  - pandas
+  - matplotlib
+  - scipy
+  - tifffile
+  - pillow
+  - netCDF4          # read the Sen4AgriNet .nc patches
+  - requests         # HuggingFace API + downloads
+  - pip:
+      # torch/torchvision are installed via the PyTorch index (see below);
+      # on Apple Silicon the MPS backend is used.
+      - torch
+      - torchvision
+      # SAM 2 (official Meta implementation). pip-installed from git:
+      #   pip install "git+https://github.com/facebookresearch/sam2.git"
+      - git+https://github.com/facebookresearch/sam2.git

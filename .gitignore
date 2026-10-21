@@ -1,0 +1,15 @@
+# Model weights (large, ~340 MB; download separately)
+checkpoints/
+
+# Datasets (large; not part of the repo)
+data/
+
+# Generated outputs
+outputs/
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Jupyter
+.ipynb_checkpoints/
