@@ -1,7 +1,7 @@
 # Decision log — SAM 2 × Sen4AgriNet
 
 Every design decision, the options we weighed, and the evidence behind the choice.
-Measured numbers come from `notebooks/00_data_availability.ipynb` (data) and
+Measured numbers come from `notebooks/00_en_data_availability.ipynb` (data) and
 `src/evaluate_masks.py` (baseline). Each entry ends with its caveat, so the weak
 points are on the record too.
 

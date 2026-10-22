@@ -2,7 +2,7 @@
 
 We use [Sen4AgriNet](https://github.com/Orion-AI-Lab/S4A) (Sykas et al., 2022), a
 Sentinel-2 **time-series** benchmark for agricultural segmentation. Every measured number
-below comes from `notebooks/00_data_availability.ipynb`.
+below comes from `notebooks/00_en_data_availability.ipynb`.
 
 ## The dataset: basic information
 
@@ -20,7 +20,7 @@ The Sen4AgriNet dataset is based on Sentinel-2 data:
   semantic ground truth, unused here). Both label maps are annual.
 
 ## Data selection
-To understand the data selection process please read: `notebooks/00_data_availability.ipynb`.
+To understand the data selection process please read: `notebooks/00_en_data_availability.ipynb`.
 **Here only a short summary is given.**
 
 The following selections from the base dataset were made:

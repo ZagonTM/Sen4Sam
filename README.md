@@ -5,7 +5,7 @@ Deep Learning, 1INF52, PUCP
 # What we do — three phases
 
 - **A · Open the model up.** Parameter and compute cost per block, intermediate
-  features, receptive field, latency and memory → `notebooks/01_base_model_teardown.ipynb`.
+  features, receptive field, latency and memory → `notebooks/01_en_base_model_teardown.ipynb`.
 - **B · Intervene once, measure once.** One change inside the mask decoder (hypothesis
   written *before* the experiment), one controlled ablation against the frozen baseline.
 - **C · Test under domain shift.** Evaluate on regions the model has not seen, and
@@ -15,7 +15,7 @@ Deep Learning, 1INF52, PUCP
 
 Six Sentinel-2 tiles (3 in Spain, 3 in France, **chosen at random** to avoid bias),
 148 patches each, one cloud-free May image per patch → **888 patches**, with
-ground-truth field maps. Full reasoning and numbers: [`notebooks/00_data_availability.ipynb`](notebooks/00_data_availability.ipynb).
+ground-truth field maps. Full reasoning and numbers: [`notebooks/00_en_data_availability.ipynb`](notebooks/00_en_data_availability.ipynb).
 
 ## Repository layout
 
@@ -28,8 +28,9 @@ src/         computation (importable modules + command-line scripts)
   analyze_phenology.py     NDVI-by-month (growing state) analysis -> CSV
   evaluate_masks.py        baseline: SAM 2 masks vs parcels -> CSVs
   teardown.py              Phase A instrumentation (params, MACs, features, ERF, timing)
-notebooks/   narrative, experiments, plots (00_data_availability, 01_base_model_teardown)
-docs/        data.md (data + preprocessing decisions) + decisions.md (full decision log)
+notebooks/   narrative, experiments, plots — English and Spanish versions
+             (00_{en,es}_data_availability, 01_{en,es}_base_model_teardown)
+docs/        data_{en,es}.md (data decisions) + decisions_{en,es}.md (full decision log)
 checkpoints/ SAM 2 weights (not committed — download separately)
 data/        patches + derived CSVs/images (not committed — produced by the scripts)
 ```
@@ -85,10 +86,10 @@ python src/evaluate_masks.py                     # all 888 patches (long)
 
 | file | what it is |
 |---|---|
-| `docs/data.md` | the data + preprocessing decisions, with the measured numbers |
-| `docs/decisions.md` | the full decision log (options, evidence, caveats) + decision tree |
-| `notebooks/00_data_availability.ipynb` | the measurements behind the data decisions |
-| `notebooks/01_base_model_teardown.ipynb` | Phase A: params, compute cost, features, ERF, latency |
+| `docs/data_en.md` / `data_es.md` | the data + preprocessing decisions, with the measured numbers |
+| `docs/decisions_en.md` / `decisions_es.md` | the full decision log (options, evidence, caveats) + decision tree |
+| `notebooks/00_{en,es}_data_availability.ipynb` | the measurements behind the data decisions |
+| `notebooks/01_{en,es}_base_model_teardown.ipynb` | Phase A: params, compute cost, features, ERF, latency |
 
 ## Status
 
@@ -96,7 +97,7 @@ python src/evaluate_masks.py                     # all 888 patches (long)
 - [x] Reproducible, seeded data download (900 drawn / 888 used)
 - [x] Patch → one May RGB image + ground truth
 - [x] Data availability + phenology analysis (cloud, field coverage, NDVI by month)
-- [x] Decision log (`docs/decisions.md`)
+- [x] Decision log (`docs/decisions_en.md`)
 - [x] **Phase A — instrumented teardown** (params, MACs, features, ERF, latency)
 - [ ] Baseline evaluation — SAM 2 masks vs the field maps (running)
 - [ ] Phase B — mask-decoder intervention + ablation
