@@ -1,0 +1,24 @@
+"""
+Phase B.1
+
+Hypothesis:
+The IoU prediction head learned on SA-1B natural images
+is miscalibrated for Sentinel-2 imagery.
+
+Only the IoU head will be fine-tuned.
+
+Everything else remains frozen.
+"""
+from sam2_auto_segment import build_model
+
+model = build_model()
+
+device = next(model.parameters()).device
+
+print(device)
+
+for name, module in model.named_modules():
+
+    if "iou" in name.lower():
+
+        print(name)
