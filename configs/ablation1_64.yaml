@@ -1,0 +1,14 @@
+experiment:
+  name: "ablation1_zeroshot_64"
+  mode: "inference"
+
+model:
+  type: "sam2_hiera_small"
+  checkpoint_path: "checkpoints/sam2_hiera_small.pt"
+  config_file: "sam2_hiera_s.yaml"
+  freeze_image_encoder: true
+
+data:
+  grid_size: 64
+  target_size: 1024
+  device: "cuda"

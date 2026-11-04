@@ -1,0 +1,25 @@
+experiment:
+  name: "ablation2_finetune_64"
+  mode: "train"
+
+model:
+  type: "sam2_hiera_small"
+  checkpoint_path: "checkpoints/sam2_hiera_small.pt"
+  config_file: "sam2_hiera_s.yaml"
+  freeze_image_encoder: true
+
+data:
+  image_dir: "data/sentinel/images"
+  mask_dir: "data/sentinel/masks"
+  grid_size: 64
+  target_size: 1024
+  num_workers: 4
+
+training:
+  batch_size: 4
+  epochs: 50
+  learning_rate: 0.0001
+  weight_decay: 0.05
+  early_stopping_patience: 10
+  save_dir: "checkpoints/finetuned/"
+  device: "cuda"
