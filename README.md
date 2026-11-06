@@ -2,16 +2,7 @@
 
 Deep Learning, 1INF52, PUCP
 
-# What we do — three phases
-
-- **A · Open the model up.** Parameter and compute cost per block, intermediate
-  features, receptive field, latency and memory → `notebooks/01_en_base_model_teardown.ipynb`.
-- **B · Intervene once, measure once.** One change inside the mask decoder (hypothesis
-  written *before* the experiment), one controlled ablation against the frozen baseline.
-- **C · Test under domain shift.** Evaluate on regions the model has not seen, and
-  report honestly what breaks and what does not work.
-
-## The data, in one line
+## The data
 
 Six Sentinel-2 tiles (3 in Spain, 3 in France, **chosen at random** to avoid bias),
 148 patches each, one cloud-free May image per patch → **888 patches**, with
@@ -20,12 +11,14 @@ ground-truth field maps. Full reasoning and numbers: [`notebooks/00_en_data_avai
 ## Repository layout
 
 ```
-src/         computation (importable modules + command-line scripts)
-  sam2_auto_segment.py     build the SAM 2 model + the automatic mask generator
-  download_s4a.py          reproducible (seeded) download of Sen4AgriNet patches
-  s4a_io.py                read a patch -> one May RGB image + field maps
-  analyze_availability.py  availability / cloud / field-coverage analysis -> CSVs
-  analyze_phenology.py     NDVI-by-month (growing state) analysis -> CSV
+src/
+  sam2_auto_segment.py     build SAM 2 model + automatic mask generator
+  download_process_data/   Download and preprocessing of Sen4AgriNet data
+    download_s4a.py          1. download - creates: data/raw/s4a/ and data/manifest.csv
+    preprocessing.py         2. processing - creates: subdataset in RGB format
+    analyze_availability.py  optional: availability / cloud / field-coverage analysis
+    analyze_phenology.py     optional: NDVI-by-month (growing state) analysis
+    data_helpers.py          shared library for download and processing
   evaluate_masks.py        baseline: SAM 2 masks vs parcels -> CSVs
   teardown.py              Phase A instrumentation (params, MACs, features, ERF, timing)
 notebooks/   narrative, experiments, plots — English and Spanish versions
@@ -37,9 +30,7 @@ data/        patches + derived CSVs/images (not committed — produced by the sc
 
 ## Setup
 
-Dependencies are pinned in [`environment.yaml`](environment.yaml): Python 3.12 plus
-torch, torchvision, `sam2` (from git), numpy, pandas, matplotlib, scipy, tifffile,
-pillow, netCDF4, requests.
+Dependencies are pinned in [`environment.yaml`](environment.yaml)
 
 ```bash
 conda env create -f environment.yaml
@@ -52,34 +43,42 @@ Then download the SAM 2 weights into `checkpoints/` — e.g. `sam2.1_hiera_small
 The device is chosen automatically (CUDA → Apple MPS → CPU), so the same code runs
 locally and on Colab.
 
-### Run on Colab
-
-Colab has no MPS but provides a CUDA GPU (choose Runtime → GPU); the code detects it. One
-setup cell:
-
-```python
-!git clone https://github.com/ZagonTM/Sen4Sam.git
-%cd Sen4Sam
-!pip install "git+https://github.com/facebookresearch/sam2.git" netCDF4
-!mkdir -p checkpoints && wget -q -P checkpoints \
-    https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_small.pt
-```
-
-Then run the scripts or open the notebooks as below. The full download (900 patches,
-~24 GB) is heavy for a free runtime — use `--limit` / `--patches` to try a subset first.
 
 ## How to run
 
-```bash
-# data (reproducible: same tiles / patches / dates every time, all seeds fixed)
-python src/download_s4a.py                       # -> data/raw/s4a/ + data/manifest.csv
-python src/s4a_io.py --manifest data/manifest.csv --out-dir data/processed
-python src/analyze_availability.py               # -> data/availability_*.csv
-python src/analyze_phenology.py                  # -> data/phenology_by_month.csv
+Run everything from the repo root, after the [Setup](#setup) above.
 
-# baseline evaluation (needs the processed images above)
-python src/evaluate_masks.py --limit 30          # quick test
-python src/evaluate_masks.py                     # all 888 patches (long)
+### Quickstart
+
+You only need `data/processed/` and `data/manifest.csv`. Get them by either:
+
+- copying them from the shared folder: `<LINK>` (into `data/`), or
+- rebuilding them (next section; the download is ~24 GB).
+
+Then check that everything works:
+
+```bash
+python src/evaluate_masks.py --limit 30          # quick test; drop --limit for all 888 patches (long)
+```
+
+### Rebuild the processed data from scratch
+
+Two steps. All seeds are fixed and the defaults give the same 888 patches every time, so
+keep the defaults.
+
+| # | command | writes | note |
+|---|---|---|---|
+| 1 | `python src/download_process_data/download_s4a.py` | `data/raw/s4a/`, `data/manifest.csv` | ~24 GB, slow |
+| 2 | `python src/download_process_data/preprocessing.py --manifest data/manifest.csv --out-dir data/processed` | `data/processed/<patch>_rgb.png`, `_parcels.npy`, `_labels.npy` | one May RGB image + field maps per patch |
+
+### Optional: analysis behind the data decisions
+
+Only needed to re-create the plots in `notebooks/00_*_data_availability.ipynb`. Not needed
+for modelling. They need the raw files from step 1.
+
+```bash
+python src/download_process_data/analyze_availability.py               # -> data/availability_*.csv
+python src/download_process_data/analyze_phenology.py                  # -> data/phenology_by_month.csv
 ```
 
 ## Documentation — where to read what
@@ -90,18 +89,6 @@ python src/evaluate_masks.py                     # all 888 patches (long)
 | `docs/decisions_en.md` / `decisions_es.md` | the full decision log (options, evidence, caveats) + decision tree |
 | `notebooks/00_{en,es}_data_availability.ipynb` | the measurements behind the data decisions |
 | `notebooks/01_{en,es}_base_model_teardown.ipynb` | Phase A: params, compute cost, features, ERF, latency |
-
-## Status
-
-- [x] SAM 2 setup — frozen model, prompt-free mask generator
-- [x] Reproducible, seeded data download (900 drawn / 888 used)
-- [x] Patch → one May RGB image + ground truth
-- [x] Data availability + phenology analysis (cloud, field coverage, NDVI by month)
-- [x] Decision log (`docs/decisions_en.md`)
-- [x] **Phase A — instrumented teardown** (params, MACs, features, ERF, latency)
-- [ ] Baseline evaluation — SAM 2 masks vs the field maps (running)
-- [ ] Phase B — mask-decoder intervention + ablation
-- [ ] Phase C — domain-shift analysis + honest failure report
 
 ## Credits
 
