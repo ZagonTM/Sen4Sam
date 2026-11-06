@@ -52,7 +52,7 @@ Run everything from the repo root, after the [Setup](#setup) above.
 
 You only need `data/processed/` and `data/manifest.csv`. Get them by either:
 
-- copying them from the shared folder: `<LINK>` (into `data/`), or
+- copying them from the [shared folder](https://drive.google.com/drive/folders/1QfVGnmcKq7cZ68suQgPiK6QL5QCSK0dt?usp=share_link) (into `data/`), or
 - rebuilding them (next section; the download is ~24 GB).
 
 Then check that everything works:
