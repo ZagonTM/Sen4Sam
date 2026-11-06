@@ -12,8 +12,8 @@ The notebook (notebooks/00_data_availability.ipynb) turns these into plots and t
 decision table. Keeping the numbers here makes them reproducible and citable.
 
 Usage:
-    python src/analyze_availability.py                 # all patches
-    python src/analyze_availability.py --limit 12       # quick timing test
+    python src/download_process_data/analyze_availability.py                 # all patches
+    python src/download_process_data/analyze_availability.py --limit 12       # quick timing test
 """
 
 import argparse
@@ -24,7 +24,7 @@ from pathlib import Path
 import netCDF4
 import numpy as np
 
-from s4a_io import (CLOUD_BANDS, hollstein_cloud, read_band, read_dates,
+from data_helpers import (CLOUD_BANDS, hollstein_cloud, read_band, read_dates,
                     read_parcels, resample_to_10m)
 
 MONTH_LABELS = [f"M{m}" for m in range(1, 13)]

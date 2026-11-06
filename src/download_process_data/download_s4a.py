@@ -19,11 +19,11 @@ and the same patches:
      kept subset is derived from it). Each kept patch yields exactly one image later on.
   5. A manifest CSV records every patch and its measurements.
 
-The reading/cloud/preprocessing helpers live in src/s4a_io.py.
+The reading/cloud/preprocessing helpers live in src/download_process_data/data_helpers.py.
 
 Usage:
-    python src/download_s4a.py                      # default settings
-    python src/download_s4a.py --patches 20 --keep 10 --workers 4   # small test
+    python src/download_process_data/download_s4a.py                      # default settings
+    python src/download_process_data/download_s4a.py --patches 20 --keep 10 --workers 4   # small test
 """
 
 import argparse
@@ -36,8 +36,8 @@ from pathlib import Path
 import numpy as np
 import requests
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))  # so s4a_io imports work
-from s4a_io import CLOUD_THRESHOLD, MONTHS, choose_acquisition, patch_info
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # so data_helpers imports work
+from data_helpers import CLOUD_THRESHOLD, MONTHS, choose_acquisition, patch_info
 
 # --- Configuration (edit here; the CLI can override the numeric ones) ----------
 

@@ -12,8 +12,8 @@ NDVI of that patch's clean acquisitions in that month. The notebook
 greenness curve that is weighed against availability when the window is chosen.
 
 Usage:
-    python src/analyze_phenology.py                # all patches
-    python src/analyze_phenology.py --limit 12      # quick timing test
+    python src/download_process_data/analyze_phenology.py                # all patches
+    python src/download_process_data/analyze_phenology.py --limit 12      # quick timing test
 """
 
 import argparse
@@ -24,7 +24,7 @@ from pathlib import Path
 import netCDF4
 import numpy as np
 
-from s4a_io import (CLOUD_BANDS, CLOUD_THRESHOLD, hollstein_cloud, read_band,
+from data_helpers import (CLOUD_BANDS, CLOUD_THRESHOLD, hollstein_cloud, read_band,
                     read_dates, read_parcels, resample_to_10m)
 
 
