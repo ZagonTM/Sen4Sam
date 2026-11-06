@@ -1,33 +1,27 @@
 """
-Read Sen4AgriNet patches and build SAM 2 inputs + ground truth.
+Shared helpers for reading Sen4AgriNet patches (.nc files).
 
-This module is the I/O + preprocessing half of the pipeline:
+Used by download_s4a.py, analyze_availability.py, analyze_phenology.py and
+preprocessing.py, so there is a single implementation of the reading and cloud logic:
 
   * parse acquisition dates and read bands (resampled to the 10 m grid),
   * compute Hollstein cloud fractions and pick the single image date,
-  * build the RGB uint8 image (B04/B03/B02, /10000, 2-98% percentile stretch),
   * read the ground-truth maps: `parcels` (field ids, 0 = non-field) and
     `labels` (crop type).
 
-The download script (src/download_s4a.py) imports the selection helpers from here,
-so there is a single implementation of the cloud logic.
-
-CLI: turn downloaded patches into model-ready files.
-    python src/s4a_io.py --manifest data/manifest.csv --out-dir data/processed
+Library only: nothing to run here. To build data/processed/, run src/download_process_data/preprocessing.py.
 """
 
-import argparse
 import datetime
 import random
 import re
-from pathlib import Path
 
 import netCDF4
 import numpy as np
 
 # --- Configuration -------------------------------------------------------------
 
-MONTHS = (5,)           # May: peak crop greenness with ~full patch coverage (see docs/data.md)
+MONTHS = (5,)           # May: peak crop greenness with ~full patch coverage (see docs/data_en.md)
 CLOUD_THRESHOLD = 0.05  # an acquisition is "clean" if its cloud fraction <= this
 
 # Bands: the Hollstein cloud formula needs these seven (mixed 10/20/60 m grids);
@@ -133,81 +127,3 @@ def read_parcels(nc):
 def read_labels(nc):
     """Per-pixel crop-type map."""
     return np.asarray(nc["labels"].variables["labels"][:])
-
-
-# --- Building the SAM 2 input image -------------------------------------------
-
-def build_rgb(nc, index):
-    """RGB uint8 image from one acquisition: B04/B03/B02, /10000, 2-98% stretch."""
-    channels = [read_band(nc, band)[index] / 10000.0 for band in RGB_BANDS]
-    rgb = np.stack(channels, axis=-1)
-    stretched = np.zeros_like(rgb)
-    for c in range(3):
-        low, high = np.percentile(rgb[..., c], (2, 98))
-        stretched[..., c] = np.clip((rgb[..., c] - low) / (high - low + 1e-6), 0, 1)
-    return (stretched * 255).astype(np.uint8)
-
-
-def read_patch(nc_path, date=None, months=MONTHS, cloud_threshold=CLOUD_THRESHOLD,
-               seed_key=None):
-    """Read one patch -> the SAM 2 image, the ground truth, and the date used.
-
-    If `date` is given (a datetime.date from the manifest) that acquisition is
-    used; otherwise the least-cloudy window acquisition is chosen.
-    """
-    nc = netCDF4.Dataset(nc_path)
-    try:
-        dates = read_dates(nc)
-        if date is None:
-            month_idx, cloud = window_cloud_fractions(nc, dates, months)
-            clean = [(dates[i], c) for i, c in zip(month_idx, cloud)
-                     if c <= cloud_threshold]
-            used = choose_acquisition(clean, seed_key or str(nc_path))
-            index = dates.index(used)
-        else:
-            index = next(i for i, d in enumerate(dates) if d.date() == date)
-            used = dates[index]
-        image = build_rgb(nc, index)
-        parcels = read_parcels(nc)
-        labels = read_labels(nc)
-    finally:
-        nc.close()
-    return {"image": image, "parcels": parcels, "labels": labels, "date": used}
-
-
-# --- CLI: manifest -> processed files ------------------------------------------
-
-def save_processed(record, patch_name, out_dir):
-    """Save the RGB image (.png) and the ground truth (.npy) of one patch."""
-    from PIL import Image
-    out_dir = Path(out_dir)
-    out_dir.mkdir(parents=True, exist_ok=True)
-    Image.fromarray(record["image"]).save(out_dir / f"{patch_name}_rgb.png")
-    np.save(out_dir / f"{patch_name}_parcels.npy", record["parcels"])
-    np.save(out_dir / f"{patch_name}_labels.npy", record["labels"])
-
-
-def main():
-    import csv
-    parser = argparse.ArgumentParser(description="Build SAM 2 inputs from downloaded patches.")
-    parser.add_argument("--manifest", default="data/manifest.csv")
-    parser.add_argument("--out-dir", default="data/processed")
-    parser.add_argument("--limit", type=int, default=0, help="process only N patches (0 = all)")
-    args = parser.parse_args()
-
-    with open(args.manifest) as fh:
-        rows = [r for r in csv.DictReader(fh) if r["kept"] == "1"]
-    if args.limit:
-        rows = rows[:args.limit]
-
-    for i, row in enumerate(rows, 1):
-        date = datetime.date.fromisoformat(row["chosen_date"])
-        record = read_patch(row["file"], date=date)
-        save_processed(record, row["patch"], args.out_dir)
-        print(f"[{i}/{len(rows)}] {row['patch']} <- {record['date'].date()} "
-              f"({row['n_fields']} fields)")
-    print(f"Saved {len(rows)} patches to {args.out_dir}")
-
-
-if __name__ == "__main__":
-    main()
