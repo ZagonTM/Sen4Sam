@@ -1,0 +1,103 @@
+/Users/Johanna/miniforge3/envs/deeplearning/lib/python3.12/site-packages/torch/jit/_script.py:1491: FutureWarning: `torch.jit.script` is deprecated. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+device mps | points_per_side 16 (256 decoder calls) | pred_iou 0.5 | stability 0.8
+[10/888] 2.6 s/patch, ETA 38.5 min
+[20/888] 2.6 s/patch, ETA 38.2 min
+[30/888] 2.6 s/patch, ETA 37.7 min
+[40/888] 2.7 s/patch, ETA 37.6 min
+[50/888] 2.7 s/patch, ETA 38.1 min
+[60/888] 2.8 s/patch, ETA 38.7 min
+[70/888] 2.9 s/patch, ETA 39.5 min
+[80/888] 3.0 s/patch, ETA 39.8 min
+[90/888] 3.0 s/patch, ETA 40.1 min
+[100/888] 3.0 s/patch, ETA 39.9 min
+[110/888] 3.1 s/patch, ETA 39.8 min
+[120/888] 3.1 s/patch, ETA 39.7 min
+[130/888] 3.1 s/patch, ETA 39.5 min
+[140/888] 3.1 s/patch, ETA 39.2 min
+[150/888] 3.2 s/patch, ETA 38.8 min
+[160/888] 3.2 s/patch, ETA 38.4 min
+[170/888] 3.2 s/patch, ETA 38.0 min
+[180/888] 3.2 s/patch, ETA 38.1 min
+[190/888] 3.3 s/patch, ETA 38.2 min
+[200/888] 3.3 s/patch, ETA 37.9 min
+[210/888] 3.3 s/patch, ETA 37.7 min
+[220/888] 3.4 s/patch, ETA 37.9 min
+[230/888] 3.5 s/patch, ETA 37.9 min
+[240/888] 3.5 s/patch, ETA 38.0 min
+[250/888] 3.6 s/patch, ETA 37.9 min
+[260/888] 3.6 s/patch, ETA 37.4 min
+[270/888] 3.6 s/patch, ETA 36.9 min
+[280/888] 3.6 s/patch, ETA 36.4 min
+[290/888] 3.6 s/patch, ETA 35.8 min
+[300/888] 3.6 s/patch, ETA 35.3 min
+[310/888] 3.6 s/patch, ETA 34.7 min
+[320/888] 3.6 s/patch, ETA 34.1 min
+[330/888] 3.6 s/patch, ETA 33.4 min
+[340/888] 3.6 s/patch, ETA 32.8 min
+[350/888] 3.6 s/patch, ETA 32.1 min
+[360/888] 3.6 s/patch, ETA 31.5 min
+[370/888] 3.6 s/patch, ETA 30.9 min
+[380/888] 3.6 s/patch, ETA 30.3 min
+[390/888] 3.6 s/patch, ETA 29.7 min
+[400/888] 3.6 s/patch, ETA 29.2 min
+[410/888] 3.6 s/patch, ETA 28.6 min
+[420/888] 3.6 s/patch, ETA 28.0 min
+[430/888] 3.6 s/patch, ETA 27.4 min
+[440/888] 3.6 s/patch, ETA 26.7 min
+[450/888] 3.6 s/patch, ETA 26.1 min
+[460/888] 3.6 s/patch, ETA 25.6 min
+[470/888] 3.6 s/patch, ETA 25.0 min
+[480/888] 3.6 s/patch, ETA 24.4 min
+[490/888] 3.6 s/patch, ETA 24.0 min
+[500/888] 3.6 s/patch, ETA 23.4 min
+[510/888] 3.6 s/patch, ETA 22.8 min
+[520/888] 3.6 s/patch, ETA 22.2 min
+[530/888] 3.6 s/patch, ETA 21.6 min
+[540/888] 3.6 s/patch, ETA 21.0 min
+[550/888] 3.6 s/patch, ETA 20.4 min
+[560/888] 3.6 s/patch, ETA 19.7 min
+[570/888] 3.6 s/patch, ETA 19.1 min
+[580/888] 3.6 s/patch, ETA 18.5 min
+[590/888] 3.6 s/patch, ETA 17.9 min
+[600/888] 3.6 s/patch, ETA 17.3 min
+[610/888] 3.6 s/patch, ETA 16.7 min
+[620/888] 3.6 s/patch, ETA 16.0 min
+[630/888] 3.6 s/patch, ETA 15.4 min
+[640/888] 3.6 s/patch, ETA 14.8 min
+[650/888] 3.6 s/patch, ETA 14.2 min
+[660/888] 3.6 s/patch, ETA 13.6 min
+[670/888] 3.6 s/patch, ETA 13.0 min
+[680/888] 3.6 s/patch, ETA 12.4 min
+[690/888] 3.6 s/patch, ETA 11.8 min
+[700/888] 3.6 s/patch, ETA 11.2 min
+[710/888] 3.6 s/patch, ETA 10.6 min
+[720/888] 3.6 s/patch, ETA 10.0 min
+[730/888] 3.6 s/patch, ETA 9.4 min
+[740/888] 3.6 s/patch, ETA 8.8 min
+[750/888] 3.5 s/patch, ETA 8.2 min
+[760/888] 3.5 s/patch, ETA 7.6 min
+[770/888] 3.5 s/patch, ETA 7.0 min
+[780/888] 3.5 s/patch, ETA 6.4 min
+[790/888] 3.5 s/patch, ETA 5.8 min
+[800/888] 3.5 s/patch, ETA 5.2 min
+[810/888] 3.5 s/patch, ETA 4.6 min
+[820/888] 3.5 s/patch, ETA 4.0 min
+[830/888] 3.5 s/patch, ETA 3.4 min
+[840/888] 3.5 s/patch, ETA 2.8 min
+[850/888] 3.5 s/patch, ETA 2.2 min
+[860/888] 3.5 s/patch, ETA 1.6 min
+[870/888] 3.5 s/patch, ETA 1.1 min
+[880/888] 3.5 s/patch, ETA 0.5 min
+[888/888] 3.5 s/patch, ETA 0.0 min
+wrote data/eval_patches.csv (888 rows)
+wrote data/eval_summary.csv (7 rows)
+
+per-tile summary:
+  31TBF: masks 39.8 | coverage 0.609 | mean IoU 0.0682 | fields@IoU>0.5 0.0483 | mask-on-field 0.4452
+  31TCG: masks 51.2 | coverage 0.6499 | mean IoU 0.0901 | fields@IoU>0.5 0.0758 | mask-on-field 0.4986
+  31TCL: masks 122.7 | coverage 0.5445 | mean IoU 0.218 | fields@IoU>0.5 0.2056 | mask-on-field 0.6128
+  31TDG: masks 50.3 | coverage 0.5864 | mean IoU 0.1051 | fields@IoU>0.5 0.0832 | mask-on-field 0.3024
+  31TDK: masks 109.1 | coverage 0.4925 | mean IoU 0.1661 | fields@IoU>0.5 0.1425 | mask-on-field 0.7413
+  31UCP: masks 111.9 | coverage 0.6633 | mean IoU 0.3183 | fields@IoU>0.5 0.319 | mask-on-field 0.7783
+  ALL: masks 80.8 | coverage 0.5909 | mean IoU 0.161 | fields@IoU>0.5 0.1457 | mask-on-field 0.5631
