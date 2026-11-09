@@ -171,6 +171,23 @@ doc = Document(TEMPLATE)
 P = list(doc.paragraphs)
 
 
+def _author_order():
+    """Author order André Rubio, Johanna Zagon, Pierre Lavergne (same as the poster); affiliation numbers follow it."""
+    for p in P:
+        r = p.runs
+        if r and r[0].text.startswith("Johanna Zagon¹, Andre Rubio²"):
+            r[0].text = "Andre Rubio¹, Johanna Zagon², Pierre Lavergne"
+        elif r and r[0].text.startswith("¹Potsdam, Alemania"):
+            r[0].text = "¹Lima, Perú  |  ²Potsdam, Alemania  |  "
+    emails = [p for p in P if p.runs and p.runs[0].text.split(":")[0] in ("Johanna Zagon", "Andre Rubio")]
+    if len(emails) == 2 and emails[0].runs[0].text.startswith("Johanna"):
+        a, b = emails[0].runs[0], emails[1].runs[0]
+        a.text, b.text = b.text, a.text
+
+
+_author_order()
+
+
 def set_text(p, text, size=None):
     """Replace the runs of paragraph p, keeping the first run's formatting; **bold** and *italic* spans are supported."""
     base = copy.deepcopy(p.runs[0]._r) if p.runs else None
@@ -312,7 +329,7 @@ while refs._p.getprevious() is not None and refs._p.getprevious().tag == qn("w:p
 refs.paragraph_format.space_before = Pt(6)
 
 doc.core_properties.title = TITLE
-doc.core_properties.author = "Johanna Zagon, Andre Rubio, Pierre Lavergne"
+doc.core_properties.author = "Andre Rubio, Johanna Zagon, Pierre Lavergne"
 doc.core_properties.subject = "WAIMLAp 2026 extended abstract"
 
 doc.save(OUT)
