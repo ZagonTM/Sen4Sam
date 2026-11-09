@@ -13,7 +13,8 @@ its masks against the parcel map:
     check that an IoU deficit is the model's, not a georeferencing artifact
 
 Outputs: data/eval_patches.csv (one row per patch) and data/eval_summary.csv
-(per tile / country / total).
+(per tile / country / total). Use --out DIR (or --out-patches / --out-summary) so that
+parallel runs do not overwrite each other's CSVs.
 
 Usage:
     python src/evaluate_masks.py --limit 30      # quick test
@@ -82,9 +83,18 @@ def boundary_alignment(image, parcels):
     return float(grad[boundary].mean() / (grad[~boundary].mean() + 1e-9))
 
 
-def evaluate_patch(image, parcels, generator):
-    """All metrics for one patch."""
-    masks = generate_masks(generator, image)
+def evaluate_patch(image, parcels, generator, amp=True):
+    """All metrics for one patch.
+
+    amp: bfloat16 autocast around the generator on CUDA (no-op on MPS / CPU).
+    """
+    from sam2_auto_segment import autocast_context
+    t0 = time.time()
+    with autocast_context(generator.predictor.device, enabled=amp):
+        records = generator.generate(image)
+    gen_seconds = time.time() - t0
+    masks = (np.stack([r["segmentation"] for r in records]).astype(bool) if records
+             else np.zeros((0, *image.shape[:2]), bool))
     height, width = parcels.shape
     union = masks.any(axis=0) if len(masks) else np.zeros((height, width), bool)
 
@@ -110,6 +120,10 @@ def evaluate_patch(image, parcels, generator):
         "large_mean_iou": round(large_iou, 4) if large_iou == large_iou else "",
         "mask_on_field_fraction": round(float(np.mean(on_field)), 4) if on_field else 0.0,
         "alignment": round(boundary_alignment(image, parcels), 3),
+        # diagnostics: what the filters of the generator see (after filtering)
+        "mean_pred_iou": round(float(np.mean([r["predicted_iou"] for r in records])), 4) if records else "",
+        "mean_stability": round(float(np.mean([r["stability_score"] for r in records])), 4) if records else "",
+        "gen_seconds": round(gen_seconds, 3),   # runtime of generator.generate (encoder + all decoder calls)
     }
 
 
@@ -123,6 +137,7 @@ def aggregate(group, name, key="tile"):
         "mean_best_iou": round(float(np.mean([r["mean_best_iou"] for r in group])), 4),
         "mean_frac_iou_gt_0.5": round(float(np.mean([r["frac_iou_gt_0.5"] for r in group])), 4),
         "mean_mask_on_field": round(float(np.mean([r["mask_on_field_fraction"] for r in group])), 4),
+        "mean_gen_seconds": round(float(np.mean([r["gen_seconds"] for r in group])), 3),
     }
 
 
@@ -149,38 +164,61 @@ def main():
     parser = argparse.ArgumentParser(description="Evaluate prompt-free SAM 2 on Sen4AgriNet.")
     parser.add_argument("--manifest", default="data/manifest.csv")
     parser.add_argument("--processed", default="data/processed")
+    parser.add_argument("--out", default=None,
+                        help="output dir; writes <out>/eval_patches.csv and <out>/eval_summary.csv "
+                             "(overrides --out-patches / --out-summary)")
     parser.add_argument("--out-patches", default="data/eval_patches.csv")
     parser.add_argument("--out-summary", default="data/eval_summary.csv")
+    parser.add_argument("--fp32", action="store_true",
+                        help="disable bfloat16 autocast on CUDA (it is always off on MPS / CPU)")
     parser.add_argument("--limit", type=int, default=0, help="only N patches (0 = all)")
     parser.add_argument("--points-per-side", type=int, default=16,
                         help="prompt grid; decoder calls = this squared")
     parser.add_argument("--pred-iou", type=float, default=0.5, help="mask quality filter")
     parser.add_argument("--stability", type=float, default=0.8, help="stability filter")
     parser.add_argument("--checkpoint", default=None)
+    parser.add_argument("--weights", default=None,
+                        help="trained decoder weights (file written by train_decoder.py)")
+    parser.add_argument("--split-file", default=None, help="results/split.csv")
+    parser.add_argument("--split", default=None, choices=["train", "val", "test"],
+                        help="only the patches of this split (needs --split-file)")
     args = parser.parse_args()
+    if args.out:
+        args.out_patches = str(Path(args.out) / "eval_patches.csv")
+        args.out_summary = str(Path(args.out) / "eval_summary.csv")
 
-    from sam2_auto_segment import build_mask_generator, build_model, get_device
+    from sam2_auto_segment import (build_mask_generator, build_model, get_device,
+                                   load_trainable_weights)
 
     with open(args.manifest) as fh:
         rows = [r for r in csv.DictReader(fh) if r["kept"] == "1"]
+    if args.split:
+        assert args.split_file, "--split needs --split-file"
+        with open(args.split_file) as fh:
+            wanted = {r["patch"] for r in csv.DictReader(fh) if r["split"] == args.split}
+        rows = [r for r in rows if r["patch"] in wanted]
     if args.limit:
         rows = rows[:args.limit]
 
     device = get_device()
     model = build_model(checkpoint=args.checkpoint) if args.checkpoint else build_model()
+    if args.weights:
+        load_trainable_weights(model, args.weights)
+        print(f"loaded trained weights: {args.weights}")
     generator = build_mask_generator(model, points_per_side=args.points_per_side,
                                      pred_iou_thresh=args.pred_iou,
                                      stability_score_thresh=args.stability)
     print(f"device {device} | points_per_side {args.points_per_side} "
           f"({args.points_per_side ** 2} decoder calls) | pred_iou {args.pred_iou} "
-          f"| stability {args.stability}")
+          f"| stability {args.stability} | bf16 autocast {not args.fp32 and device == 'cuda'}"
+          f" | weights {args.weights or 'pre-trained'} | -> {args.out_patches}")
 
     results = []
     started = time.time()
     for i, row in enumerate(rows, 1):
         image = load_image(Path(args.processed) / f"{row['patch']}_rgb.png")
         parcels = np.load(Path(args.processed) / f"{row['patch']}_parcels.npy")
-        metrics = evaluate_patch(image, parcels, generator)
+        metrics = evaluate_patch(image, parcels, generator, amp=not args.fp32)
         results.append({"country": row["country"], "tile": row["tile"],
                         "patch": row["patch"], "date": row["chosen_date"], **metrics})
         if i % 10 == 0 or i == len(rows):

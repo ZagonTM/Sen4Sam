@@ -76,6 +76,7 @@ JOBS=(
   "pps64|job_pps 64"
   "A_centroid_tok0|job_train A_centroid_tok0 --prompt centroid --tokens 0 --select-by generator $common $EXTRA_TRAIN"
   "D_random_multi|job_train D_random_multi --prompt random --tokens multi --select-by generator $common $EXTRA_TRAIN"
+  "E_grid_multi|job_train E_grid_multi --prompt grid --tokens multi --select-by generator $common $EXTRA_TRAIN"
   "B_centroid_multi|job_train B_centroid_multi --prompt centroid --tokens multi --select-by generator $common $EXTRA_TRAIN"
   "C_random_tok0|job_train C_random_tok0 --prompt random --tokens 0 --select-by generator $common $EXTRA_TRAIN"
   "A_loss_select|job_train A_loss_select --prompt centroid --tokens 0 --select-by loss $common $EXTRA_TRAIN"
