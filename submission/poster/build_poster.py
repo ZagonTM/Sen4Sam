@@ -34,7 +34,9 @@ TEMPLATE = HERE / "group_original.pptx"
 OUT = HERE / "Poster_SAM2_Cost_of_the_Prompt.pptx"
 NUMBERS = json.loads((ROOT / "submission/numbers.json").read_text())
 FIG_HIT = ROOT / "results/phase_c/fig_parcels_hit_vs_pps.png"
-FIG_SWEEP = ROOT / "results/figures/pps_sweep.png"
+FIG_SWEEP = HERE / "fig_pps_sweep.png"
+FIG_FILT = ROOT / "results/figures/filters_off.png"
+FIG_CURVES = ROOT / "results/figures/val_gen_curves.png"
 REPO_URL = "https://github.com/ZagonTM/Sen4Sam"
 
 PENDING = []
@@ -76,70 +78,67 @@ MOTIVATION = [
 OBJECTIVES = [
     "• **Teardown** of frozen SAM 2.1: parameters, compute per block, latency.",
     "• **Baseline** of the automatic generator against parcel ground truth.",
+    "• **Diagnose** the prompt: grid density and SAM's fixed mask filters.",
     "• **Adapt** the mask decoder (encoder frozen) and test it with the deployment pipeline.",
-    "• **Diagnose** the gap: domain shift (Spain vs. France) and prompt-grid density.",
 ]
 METHOD = [
     f"• **Data:** Sen4AgriNet [3], {NUMBERS['parcels_total']:,} parcels (≥ 20 px) in 888 Sentinel-2 patches "
     "(366 × 366 px, RGB, 10 m, May), 6 tiles, Spain and France. Split 70/15/15 by patch, stratified by tile, seed 42; "
     "test = 132 patches.",
-    "• **Model:** SAM 2.1 Hiera-Small; automatic generator, 16 × 16 grid (pps = 16), predicted-IoU ≥ 0.5, "
-    "stability ≥ 0.8.",
-    "• **Metric:** for each true parcel, best IoU over all generated masks; mean over parcels.",
-    "• **Adaptation (v1):** train decoder transformer layer 2 + IoU head (1.71 M params, 3.7 %), Dice loss, "
-    "one centroid prompt per parcel.",
-    "• **Ablation (v2):** prompt (centroid / random / grid) × output tokens (0 / 1–3), checkpoint chosen by "
-    "generator IoU; grid sweep pps 16 / 32 / 64.",
+    "• **Model:** SAM 2.1 Hiera-Small; automatic generator, 16 × 16 grid (pps = 16), filters from SA-1B: "
+    "predicted IoU ≥ 0.5, stability ≥ 0.8.",
+    "• **Metric:** for each true parcel, best IoU over all generated masks; mean over parcels; paired bootstrap 95 % CI.",
+    "• **Adaptation:** train decoder transformer layer 2 + IoU head (1.71 M params, 3.7 %), Dice (+ IoU-head) loss. "
+    "v1: centroid prompts. v2: prompt (centroid / random / grid) × output tokens, checkpoint chosen by generator IoU on val.",
+    "• **Pre-registered:** expectations written before each run (D = random prompts predicted best; "
+    "E_noiou won).",
 ]
 CAPTION_DATA = "Fig. 1. A test patch (RGB) and its parcel map; the 6 Sentinel-2 tiles lie in Catalonia and France."
 
 RES_A = [
-    "**A. The prompt dominates compute.** The encoder costs "
-    f"{ENC_GMAC} GMAC per image, the decoder {DEC_GMAC_PER_PROMPT} GMAC per prompt: a 16 × 16 grid (256 prompts) "
-    "already costs **2.6 × the encoder**, 32 × 32 ≈ 10 ×.",
-    f"**Frozen baseline:** mean best IoU **{N('baseline_all_mean_best_iou')}**; "
-    f"{P('baseline_all_frac_iou_gt_05')} of parcels with IoU > 0.5; Spain {N('baseline_es_mean_best_iou')} ≪ "
-    f"France {N('baseline_fr_mean_best_iou')}. Masks often merge neighbouring parcels.",
+    "**A. Frozen baseline and cost.** The encoder costs "
+    f"{ENC_GMAC} GMAC per image, the decoder {DEC_GMAC_PER_PROMPT} GMAC per prompt (16 × 16 grid = 2.6 × the encoder). "
+    f"Automatic mode on test: mean best IoU **{N('v1_test_iou_untrained')}** (132 patches, pps 16); "
+    f"Spain {N('baseline_es_mean_best_iou')} ≪ France {N('baseline_fr_mean_best_iou')}.",
 ]
 RES_B = [
-    "**B. Fine-tuning helped the proxy, hurt the pipeline.** Validation with centroid prompts rose "
-    f"{N('v1_val_mask_iou_before')} → {N('v1_val_mask_iou_after')}; the automatic generator on test fell "
-    f"{N('v1_test_iou_untrained')} → **{N('v1_test_iou_finetuned')}** (paired Δ {N('v1_test_delta')}, 95 % CI "
-    f"{N('v1_test_delta_ci')}; masks per patch {N('v1_masks_per_patch_before', '{:.1f}')} → "
-    f"{N('v1_masks_per_patch_after', '{:.1f}')}). **Training prompt ≠ inference prompt.**",
+    f"**B. Prompt density.** A 16 × 16 grid reaches only **{P('grid_hit_pps16')}** of parcels (32 × 32: "
+    f"{P('grid_hit_pps32')}, 64 × 64: {P('grid_hit_pps64')}). pps 32 on all 132 test patches: "
+    f"**{N('pps32_full132_iou')}** (Δ {N('pps32_full132_delta_ci')}) at 5–9 × the time; pps 64: "
+    f"{N('pps64_test_iou')} vs {N('pps16_test_iou')} on 40 Spanish patches.",
 ]
-CAPTION_B = "Fig. 2. Mean best IoU before / after decoder fine-tuning (v1), on the proxy and on the real pipeline."
+CAPTION_B = ("Fig. 2. Test mean best IoU (left) and seconds per patch (right, log; shared pod GPU) vs. grid density, "
+             "on all 132 test patches (pps 16/32) and 40 Spanish test patches (pps 16/32/64).")
 RES_C = [
-    f"**C. The grid misses the fields.** At pps = 16 (a point every 22.9 px) only **{P('grid_hit_pps16')}** of parcels "
-    f"get a grid point (Spain {P('grid_hit_pps16_es')}, France {P('grid_hit_pps16_fr')}; 20–49 px parcels "
-    f"{P('grid_hit_pps16_small_20_49px')}); pps = 32: {P('grid_hit_pps32')}, pps = 64: **{P('grid_hit_pps64')}**. "
-    f"Patch IoU tracks parcel size (Spearman ρ = {N('spearman_iou_vs_median_parcel_area', '{:.2f}')}; "
-    "confounded with country). Coverage is an upper bound, not IoU.",
+    "**C. SAM's filters, calibrated on SA-1B, discard good masks.** Filters off (pps 16): "
+    f"**{N('filters_off_test_iou')}** (Δ {N('filters_off_delta_ci')}), "
+    f"{N('filters_off_masks_per_patch', '{:.0f}')} vs {N('filters_on_masks_per_patch', '{:.0f}')} masks per patch; "
+    f"share of mask area on fields {N('untrained_mask_on_field', '{:.2f}')} → "
+    f"{N('filters_off_mask_on_field', '{:.2f}')}: a precision trade-off.",
 ]
-CAPTION_C = "Fig. 3. Fraction of true parcels hit by ≥ 1 grid point, by parcel size (all 888 patches)."
 RES_D = [
-    f"**D. Denser grid, better masks (v2).** On {NUMBERS['pps_sweep_n_patches']} test patches (Spain), IoU rises "
-    f"{N('pps16_test_iou')} → {N('pps32_test_iou')} → **{N('pps64_test_iou')}** for pps 16 / 32 / 64, at "
-    f"{N('pps16_sec_per_patch', '{:.2f}')} → {N('pps32_sec_per_patch', '{:.2f}')} → "
-    f"{N('pps64_sec_per_patch', '{:.2f}')} s per patch. Filters off (pps = 16): {N('filters_off_test_iou')}.",
-    "**Decoder ablation:** with checkpoints chosen by generator IoU, no trained variant beat the frozen model "
-    f"(best = epoch 0, {N('best_v2_test_iou')}); choosing by validation loss gives {N('v2_loss_select_test_iou')}.",
+    "**D. Fine-tuning.** v1 (centroid prompts) raised prompted mask IoU on val "
+    f"{N('v1_val_mask_iou_before')} → {N('v1_val_mask_iou_after')} but the generator on test collapsed to "
+    f"**{N('v1_test_iou_finetuned')}**. v2: training the IoU head lowers the generator metric every time "
+    "(selection kept epoch 0) although masks improve (filters off: E_loss "
+    f"{N('e_loss_test_nofilter_iou')} vs {N('filters_off_test_iou')}). **IoU-head loss off** (grid prompts, "
+    f"tokens 1–3): test **{N('e_noiou_test_iou', '{:.3f}')}**, Δ +0.085 [+0.080, +0.091], the first fine-tune "
+    f"that beats frozen SAM. Negative clicks + step-level selection: {N('f_iouoff_test_iou')}.",
 ]
-CAPTION_D = ("Fig. 4. Mean best IoU (left) and seconds per patch (right, log scale; shared pod GPU) vs. grid density, "
-             "first 40 test patches.")
+CAPTION_C = "Fig. 3. Test mean best IoU with SAM's filters on / off (m/p = masks per patch)."
+CAPTION_V1 = "Fig. 4. v1: val bars = prompted mask IoU; test bars = automatic generator, mean best IoU."
+CAPTION_D = ("Fig. 5. Validation generator IoU during training (12 val patches). Every run that trains the IoU head "
+             "falls below the frozen model; with the IoU-head loss off it rises.")
 
 CONCLUSIONS = [
-    "• **The bottleneck is prompt density, not the decoder:** a 16 × 16 grid reaches only "
-    f"{P('grid_hit_pps16')} of parcels; a 64 × 64 grid raises IoU {N('pps16_test_iou')} → {N('pps64_test_iou')}, "
-    "while no decoder fine-tune beat the frozen model.",
-    "• **Validate with the deployment pipeline:** tuning on centroid prompts improved validation "
-    f"({N('v1_val_mask_iou_before')} → {N('v1_val_mask_iou_after')}) and broke the automatic generator "
-    f"({N('v1_test_iou_untrained')} → {N('v1_test_iou_finetuned')}).",
-    "• **Removing the human prompt has a price:** every grid point is a decoder pass, so the better grid costs "
-    f"{N('pps16_sec_per_patch', '{:.2f}')} → {N('pps64_sec_per_patch', '{:.2f}')} s per patch.",
+    f"• **The cost of the prompt** is three things: grid density ({P('grid_hit_pps16')} of parcels reached at pps 16), "
+    f"filters calibrated on another domain (off: {N('v1_test_iou_untrained')} → {N('filters_off_test_iou')}), and "
+    f"the train/inference prompt mismatch (v1: {N('v1_test_iou_finetuned')}).",
+    "• **Do not retrain the IoU head under fixed thresholds**, or recalibrate the thresholds: with its loss off, "
+    f"the decoder beats frozen SAM ({N('v1_test_iou_untrained')} → {N('e_noiou_test_iou')}).",
+    "• **Validate on the deployment pipeline:** proxy gains (val prompted IoU) predicted the opposite of test.",
 ]
-LIMITS = ("Limits: one seed; per-patch aggregates; grid sweep on 40 Spanish test patches; the Spain–France gap mixes parcel size "
-          "with crop and radiometric shift.")
+LIMITS = ("Limits: one seed; 150 training patches; pps 64 on 40 Spanish patches only; timings on a shared GPU.")
 REFERENCES = [
     "[1] N. Ravi et al., “SAM 2: Segment Anything in Images and Videos,” arXiv:2408.00714, 2024.",
     "[2] A. Kirillov et al., “Segment Anything,” in Proc. IEEE/CVF ICCV, pp. 4015–4026, 2023.",
@@ -282,20 +281,20 @@ def placeholder(x, y, w, h, label):
 
 def bar_chart(x, y, w, h):
     cd = CategoryChartData()
-    cd.categories = ["Validation (centroid prompts)", "Test (automatic generator)"]
+    cd.categories = ["prompted mask IoU (val)", "automatic generator, mean best IoU (test)"]
     cd.add_series("Frozen SAM 2.1", (NUMBERS["v1_val_mask_iou_before"], NUMBERS["v1_test_iou_untrained"]))
-    cd.add_series("Fine-tuned decoder (v1)", (NUMBERS["v1_val_mask_iou_after"], NUMBERS["v1_test_iou_finetuned"]))
+    cd.add_series("Fine-tuned (v1)", (NUMBERS["v1_val_mask_iou_after"], NUMBERS["v1_test_iou_finetuned"]))
     gf = slide.shapes.add_chart(XL_CHART_TYPE.COLUMN_CLUSTERED, Inches(x), Inches(y), Inches(w), Inches(h), cd)
     ch = gf.chart
     ch.has_legend = True; ch.legend.position = XL_LEGEND_POSITION.TOP; ch.legend.include_in_layout = False
-    ch.legend.font.size = Pt(20)
-    ch.font.size = Pt(20); ch.font.name = "Arial"
+    ch.legend.font.size = Pt(15)
+    ch.font.size = Pt(15); ch.font.name = "Arial"
     va = ch.value_axis
     va.maximum_scale, va.minimum_scale = 0.6, 0.0
     va.has_major_gridlines = False
     va.tick_label_position = XL_TICK_LABEL_POSITION.NONE
     va.format.line.fill.background()
-    ch.category_axis.tick_labels.font.size = Pt(20)
+    ch.category_axis.tick_labels.font.size = Pt(14)
     for s, c in zip(ch.plots[0].series, (RGBColor(0x8C, 0x8C, 0x96), PURPLE)):
         s.format.fill.solid(); s.format.fill.fore_color.rgb = c
     pl = ch.plots[0]
@@ -309,7 +308,7 @@ def bar_chart(x, y, w, h):
         for i, v in enumerate(ser.values):
             tf = ser.points[i].data_label.text_frame
             tf.text = f"{v:.3f}"
-            tf.paragraphs[0].runs[0].font.size = Pt(22); tf.paragraphs[0].runs[0].font.bold = True
+            tf.paragraphs[0].runs[0].font.size = Pt(16); tf.paragraphs[0].runs[0].font.bold = True
             ser.points[i].data_label.position = XL_LABEL_POSITION.OUTSIDE_END
     return y + h
 
@@ -364,23 +363,27 @@ RES_H = 29.5
 rb = section((100, 101, 102, 103), R, Y0, W, RES_H)
 x0, wfig = R + 0.4, W - 0.8
 y = Y0 + 0.9
-geom(rb, R + 0.35, y, W - 0.7, 2.6)
-fill(rb, RES_A, size=23, space_after=6)
-y += 2.75
-textbox(R + 0.35, y, W - 0.7, 1.6, RES_B, size=23); y += 1.7
-y = bar_chart(R + 0.9, y, W - 1.8, 5.3)
-textbox(x0, y, wfig, 0.5, [CAPTION_B], size=19, color=MUTED, italic=True, space_after=0); y += 0.65
-textbox(R + 0.35, y, W - 0.7, 2.0, RES_C, size=23); y += 2.05
-y = picture(FIG_HIT, R + 2.5, y, w=W - 5.0)
-textbox(x0, y, wfig, 0.5, [CAPTION_C], size=19, color=MUTED, italic=True, space_after=0); y += 0.65
-textbox(R + 0.35, y, W - 0.7, 2.1, RES_D, size=23); y += 2.2
-if FIG_SWEEP.exists():
-    y = picture(FIG_SWEEP, R + 0.9, y, w=W - 1.8)
-else:
-    PENDING.append("results/figures/pps_sweep.png")
-    y = placeholder(R + 1.6, y, W - 3.2, 3.6, "[FIGURE PENDING]\nresults/figures/pps_sweep.png\nIoU and s/patch vs. pps 16 / 32 / 64")
-textbox(x0, y, wfig, 0.9, [CAPTION_D], size=19, color=MUTED, italic=True, space_after=0)
-y += 0.5
+FS, CS = 22, 17
+def para(lines, h):
+    global y
+    textbox(R + 0.35, y, W - 0.7, h, lines, size=FS, space_after=4); y += h + 0.1
+def cap(x, w, text, h):
+    textbox(x, y, w, h, [text], size=CS, color=MUTED, italic=True, space_after=0)
+geom(rb, R + 0.35, y, W - 0.7, 1.25)
+fill(rb, RES_A, size=FS, space_after=4)
+y += 1.35
+para(RES_B, 1.55)
+y = picture(FIG_SWEEP, R + 0.8, y, w=W - 1.6)
+cap(x0, wfig, CAPTION_B, 0.7); y += 0.8
+para(RES_C, 1.25)
+para(RES_D, 2.75)
+hw = (W - 1.0) / 2
+yf = picture(FIG_FILT, R + 0.4, y, w=hw)
+bar_chart(R + 0.6 + hw, y, hw, yf - y)
+y = yf
+cap(R + 0.4, hw, CAPTION_C, 0.7); cap(R + 0.6 + hw, hw, CAPTION_V1, 0.7); y += 0.85
+y = picture(FIG_CURVES, R + 0.4, y, w=W - 0.8)
+cap(x0, wfig, CAPTION_D, 0.7); y += 0.7
 RESULTS_END = y + 0.6
 
 # right column: acknowledgments and contact

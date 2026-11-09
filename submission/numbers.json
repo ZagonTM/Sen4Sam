@@ -44,5 +44,22 @@
   "f_iouoff_test_iou": 0.2129,
   "f_iouon_val_gen_best": 0.1212,
   "a_loss_select_nofilter_iou": 0.2491,
-  "pps32_full132_iou": 0.2526
+  "pps32_full132_iou": 0.2526,
+  "untrained_mask_on_field": 0.584,
+  "filters_off_mask_on_field": 0.47,
+  "filters_off_delta_ci": "+0.106 [+0.100, +0.112]",
+  "pps32_full132_masks_per_patch": 165.5,
+  "pps32_full132_sec_per_patch": 13.89,
+  "pps16_full132_sec_per_patch": 2.63,
+  "pps32_full132_delta_ci": "+0.096 [+0.088, +0.104]",
+  "pps64_first40_delta_ci": "+0.102 [+0.085, +0.118]",
+  "e_loss_masks_per_patch": 76.0,
+  "e_loss_test_delta_ci": "−0.019 [−0.024, −0.015]",
+  "e_loss_nofilter_delta_ci": "+0.042 [+0.039, +0.046]",
+  "e_noiou_masks_per_patch": 277.6,
+  "f_iouoff_masks_per_patch": 160.0,
+  "f_iouoff_test_delta_ci": "+0.057 [+0.052, +0.062]",
+  "v2_select_epoch0_val_gen_iou": 0.121,
+  "e_noiou_test_delta_ci_3dp": "+0.085 [+0.080, +0.091]",
+  "v1_test_delta_ci_full": "−0.092 [−0.103, −0.083]"
 }
