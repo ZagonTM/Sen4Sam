@@ -4,6 +4,8 @@
 # /workspace/sen4sam_data.zip (processed/ + manifest.csv at its root). Run:
 #     bash /workspace/Sen4Sam/scripts/runpod_setup.sh
 # Safe to re-run: every step is skipped when already done.
+# NOTE: on RunPod `nproc` reports the HOST cores (e.g. 256), not the allocated vCPUs (e.g. 32).
+# Launch run_experiments.sh with OMP_NUM_THREADS=3 explicitly instead of relying on nproc.
 set -euo pipefail
 REPO=${REPO:-/workspace/Sen4Sam}
 DATA_ZIP=${DATA_ZIP:-/workspace/sen4sam_data.zip}
@@ -24,13 +26,12 @@ CONSTRAINTS=$(mktemp)
 $PY -m pip freeze 2>/dev/null | grep -iE '^(torch|torchvision|torchaudio)(==| @)' > "$CONSTRAINTS" || true
 echo "[setup] pinned: $(tr '\n' ' ' < "$CONSTRAINTS")"
 
-pipi() {   # install into the interpreter that has torch: pip first, then uv --system as fallback
+pipi() {   # uv is first choice: image python is uv-managed (PEP 668), plain pip fails with "externally-managed-environment"
+  if command -v uv >/dev/null; then
+    uv pip install -q --python "$(command -v $PY)" --break-system-packages -c "$CONSTRAINTS" "$@" && return 0
+  fi
   if $PY -m pip install -q -c "$CONSTRAINTS" "$@"; then return 0; fi
   if $PY -m pip install -q --break-system-packages -c "$CONSTRAINTS" "$@"; then return 0; fi
-  if command -v uv >/dev/null; then
-    uv pip install --python "$(command -v $PY)" --system -c "$CONSTRAINTS" "$@" && return 0
-    uv pip install --python "$(command -v $PY)" --system --break-system-packages -c "$CONSTRAINTS" "$@" && return 0
-  fi
   echo "[setup] install failed: $*"; return 1
 }
 
@@ -64,8 +65,8 @@ if [ "$(n_patches)" -lt 2664 ] || [ ! -f data/manifest.csv ]; then
   unzip -q -o "$DATA_ZIP" -d "$TMP"
   # find the manifest and the directory that actually holds the *_rgb.png files (handles
   # processed/, data/processed/ and processed/processed/ layouts)
-  MAN=$(find "$TMP" -name manifest.csv -not -path '*/__MACOSX/*' | head -1)
-  RGB=$(find "$TMP" -name '*_rgb.png' -not -path '*/__MACOSX/*' | head -1)
+  MAN=$(find "$TMP" -name manifest.csv -not -path '*/__MACOSX/*' | head -1 || true)
+  RGB=$(find "$TMP" -name '*_rgb.png' -not -path '*/__MACOSX/*' | head -1 || true)
   [ -n "$MAN" ] && [ -n "$RGB" ] || { echo "[setup] zip lacks manifest.csv or *_rgb.png"; exit 1; }
   rm -rf data/processed
   mv "$(dirname "$RGB")" data/processed
