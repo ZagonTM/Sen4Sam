@@ -1,0 +1,4 @@
+,mean_best_iou,median_area,frac_hit16
+mean_best_iou,1.0,0.865,0.834
+median_area,0.865,1.0,0.947
+frac_hit16,0.834,0.947,1.0
