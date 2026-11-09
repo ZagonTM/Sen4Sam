@@ -20,6 +20,7 @@ src/
     analyze_phenology.py     optional: NDVI-by-month (growing state) analysis
     data_helpers.py          shared library for download and processing
   evaluate_masks.py        baseline: SAM 2 masks vs parcels -> CSVs
+  make_split.py            fixed train/val/test split by patch (seed 42, per tile) -> results/split.csv
   teardown.py              Phase A instrumentation (params, MACs, features, ERF, timing)
 notebooks/   narrative, experiments, plots — English and Spanish versions
              (00_{en,es}_data_availability, 01_{en,es}_base_model_teardown)
