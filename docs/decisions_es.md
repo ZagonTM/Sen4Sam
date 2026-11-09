@@ -30,8 +30,12 @@ Segmentar campos agrícolas individuales en imágenes Sentinel-2 con SAM 2, sin 
 │   ├─ ¿dónde se mide?       → solo píxeles de campo (parcels ≠ 0)
 │   └─ ¿controles?           → estratificar por tamaño de campo + control de alineación GT
 │
-├── 4. FASE B (planificada)
-│   └─ ¿intervención?        → ?
+├── 4. FASE B
+│   ├─ ¿qué se entrena?      → transformer.layers[1] + iou_prediction_head (1.71 M, ~3.7 %)
+│   ├─ ¿pérdida?             → Dice (token 0) + MSE de la cabeza de IoU
+│   ├─ ¿prompt de entrenam.? → centroide de la parcela
+│   ├─ ¿criterio de parada?  → early stopping por pérdida de val (v1); por IoU del generador (v2)
+│   └─ ¿resultado v1?        → val mejora, test real colapsa (0.156 → 0.064)
 │
 └── 5. FASE C
     └─ ¿cambio de dominio?   → SA-1B → Sen4AgriNet
@@ -192,15 +196,88 @@ Segmentar campos agrícolas individuales en imágenes Sentinel-2 con SAM 2, sin 
   modelo**, no un artefacto de georreferenciación. Los campos grandes puntúan ~3× mejor que los
   pequeños — un hallazgo, no ruido.
 
-## 4. Fase B — la intervención (planificada)
+## 4. Fase B — la intervención
 
-- **Decisión:** adaptar el **decodificador de máscaras** (candidato: descongelar sus últimas
-  *k* capas), dejando el codificador de imagen congelado; la ablación controlada es congelado vs
-  descongelado de las últimas *k* capas.
-- **Por qué el decodificador:** es el núcleo calificado de la tarea y es pequeño (~9 % de los
-  parámetros), así que es el lugar más barato para probar una hipótesis.
-- **Advertencia:** una cabeza de clasificación añadida por encima evitaría el decodificador y
-  sacrificaría el núcleo calificado — no es una opción.
+### 4.1 Decisiones tomadas (v1, notebook 07)
+- **Qué se entrena:** solo `transformer.layers[1]` del decodificador de máscaras y
+  `iou_prediction_head` (1.71 M de parámetros, ~3.7 % del modelo); el codificador de imagen y
+  el resto del decodificador quedan congelados. Razón: el decodificador es el núcleo calificado
+  de la tarea, es pequeño y es el lugar más barato para probar una hipótesis; una cabeza de
+  clasificación externa lo evitaría y no es una opción.
+- **Pérdida:** Dice sobre el token de salida 0 + MSE de la cabeza de IoU contra el IoU real de
+  las 4 máscaras. Razón: Dice trata el desbalance de clases (campos pequeños); el MSE evita
+  que la cabeza de IoU se descalibre al mover las máscaras.
+- **Prompt de entrenamiento:** centroide de cada parcela (escalado al marco de 1024 px de SAM),
+  200 parches de entrenamiento × hasta 30 parcelas. Razón: es el prompt más simple y
+  determinista con etiqueta disponible.
+- **Parada:** early stopping sobre la pérdida de validación; mejor época = 4.
+- **Resultado v1 (honesto):** en validación con prompts de centroide mejoró: pérdida Dice
+  0.704 → 0.342, IoU de máscara 0.312 → 0.530, MSE de IoU 0.099 → 0.027. Pero en el **test real
+  con el generador automático** (132 parches) **empeoró mucho**: mejor IoU medio 0.156 → 0.064
+  (Δ pareado −0.092, IC 95 % bootstrap [−0.103, −0.083]); campos con IoU>0.5: 14.2 % → 5.9 %;
+  máscaras por parche 78.7 → 41.1; cobertura de imagen 0.59 → 0.10; máscara-sobre-campo sin
+  cambio (0.58 → 0.59); 128 de 132 parches peores, en todas las teselas y ambos países.
+- **Interpretación:** las máscaras desaparecen (colapso de recall) más que empeorar. La pérdida
+  de validación no pudo avisar porque mide el mismo tipo de prompt con el que se entrenó.
+  Hipótesis **no verificadas**: (1) la cabeza de IoU quedó pesimista para puntos de la rejilla
+  fuera del centro de parcela y el filtro `pred_iou_thresh=0.5` los descarta; (2) los tokens
+  1–3 (los que usa el generador) empeoraron porque solo se entrenó el token 0; (3) el filtro
+  de estabilidad descarta más máscaras.
+- **Advertencia:** el cuello de botella real podría ser la densidad del prompt, no el
+  decodificador: la parcela mediana mide ~10×10 px y la rejilla 16×16 sobre 366 px deja un
+  punto cada ~23 px, así que una parcela mediana recibe un clic ~20 % de las veces (aritmética,
+  no medición).
+
+### 4.2 Fase B v2 — ablación: expectativas escritas ANTES de los resultados (marca de tiempo 2026-11-08 22:15 UTC-5)
+
+Todas las corridas se evalúan en los 132 parches de test con el generador automático. Las
+corridas entrenadas se seleccionan por el IoU medio del mejor emparejamiento del generador en
+val (salvo `A_loss_select`). Las líneas "Resultado:" se llenan después, sin editar la predicción.
+
+**Diagnósticos sobre el modelo sin entrenar**
+
+1. **Filtros apagados** (`--pred-iou 0 --stability 0`).
+   - Predicción: el IoU medio sube respecto a 0.161 y aumentan máscaras y cobertura; en el
+     modelo v1 con filtros apagados el IoU se recupera en gran parte hacia el nivel base.
+   - Razón: si el IoU se recupera, la culpa es de la cabeza de IoU/estabilidad (filtrado); si
+     sigue bajo, las máscaras mismas empeoraron.
+   - Resultado:
+2. **Barrido de `points_per_side` 16 / 32 / 64** (primeros `SWEEP_LIMIT` parches de test).
+   - Predicción: 32 y 64 suben recall y IoU medio, sobre todo en campos pequeños y en España;
+     el tiempo crece ~cuadráticamente (≈4× y ≈16× frente a 16).
+   - Razón: a 16 una parcela mediana recibe clic ~20 % de las veces; más puntos reducen el
+     coste del prompt en cobertura, con retornos decrecientes.
+   - Resultado:
+
+**Corridas entrenadas**
+
+3. **A_centroid_tok0** (prompt centroide, pérdida en token 0).
+   - Predicción: mejora modesta o nula frente a la línea base (~0.16); mejor que v1 porque la
+     selección usa el generador.
+   - Razón: sigue entrenando solo el token 0 con prompts que el generador no usa.
+   - Resultado:
+4. **B_centroid_multi** (centroide, pérdida en tokens 1–3, mejor de tres).
+   - Predicción: algo mejor que A.
+   - Razón: el generador usa los tokens 1–3, así que se alinea entrenamiento y uso.
+   - Resultado:
+5. **C_random_tok0** (puntos aleatorios, token 0).
+   - Predicción: mejor que A, peor que D.
+   - Razón: los puntos aleatorios imitan la rejilla del generador (incluye puntos fuera de
+     centro y de fondo), pero el token 0 sigue desalineado.
+   - Resultado:
+6. **D_random_multi** (puntos aleatorios, tokens 1–3).
+   - Predicción: **la mejor** de las cuatro y por encima de la línea base.
+   - Razón: es la única que alinea tanto la distribución de prompts como los tokens con lo que
+     hace el generador en inferencia.
+   - Resultado:
+7. **A_loss_select** (como A pero parada por pérdida de val; replica v1).
+   - Predicción: **la peor**; reproduce el colapso (IoU test <0.10, pocas máscaras).
+   - Razón: la pérdida de val no ve el fallo del generador.
+   - Resultado:
+
+Hipótesis que cada resultado refuta: si D no supera a A, la alineación de prompt/token no es
+el factor; si el barrido de rejilla supera a todas las corridas entrenadas, el cuello de
+botella es la densidad del prompt y no el decodificador.
 
 ## 5. Fase C — cambio de dominio y honestidad
 
@@ -216,6 +293,11 @@ Segmentar campos agrícolas individuales en imágenes Sentinel-2 con SAM 2, sin 
 - **Se usó para:** redactar y refactorizar los scripts de `src/` (descarga, E/S, análisis de
   disponibilidad, evaluador) y el andamiaje de los notebooks; ejecutar las mediciones; redactar
   el texto de estos documentos.
+- **Claude Code (Anthropic)** se usó como herramienta de código: `src/train_decoder.py`, las
+  opciones nuevas de `src/evaluate_masks.py`, los scripts de RunPod (`scripts/`), el ejecutor
+  de experimentos, los scripts de análisis y el borrador de estos documentos.
+- **Humanos:** eligieron el tema, ejecutaron los notebooks 00–07 y deben verificar cada
+  decisión; ningún integrante debe defender algo que no pueda explicar.
 - **Decidido por nosotros (el equipo):** el alcance de los datos, la elección del mes, la regla
   de una sola fecha, el diseño de la métrica y la intervención de la Fase B. Cada una de esas
   decisiones está listada arriba con la evidencia en que la basamos.
