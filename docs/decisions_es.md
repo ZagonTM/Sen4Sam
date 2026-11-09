@@ -274,6 +274,15 @@ val (salvo `A_loss_select`). Las líneas "Resultado:" se llenan después, sin ed
    - Predicción: **la peor**; reproduce el colapso (IoU test <0.10, pocas máscaras).
    - Razón: la pérdida de val no ve el fallo del generador.
    - Resultado:
+8. **E_grid_multi** (añadida 2026-11-08 22:20 UTC-5, antes de cualquier resultado v2; los clics de
+   entrenamiento son los puntos reales de la rejilla 16x16 del generador que caen en una parcela,
+   tokens 1–3).
+   - Predicción: más o menos igual que D, quizá algo mejor; sigue limitada por la cobertura de la
+     rejilla (solo ~32 % de las parcelas recibe un punto con pps=16, Fase C), así que la mejora
+     sobre la línea base será pequeña.
+   - Razón: reproduce exactamente la distribución de prompts del generador, pero no puede ayudar
+     a parcelas que no reciben ningún punto.
+   - Resultado:
 
 Hipótesis que cada resultado refuta: si D no supera a A, la alineación de prompt/token no es
 el factor; si el barrido de rejilla supera a todas las corridas entrenadas, el cuello de

@@ -116,6 +116,13 @@ are filled in later, without editing the prediction.
    - Prediction: **worst**; reproduces the collapse (test IoU < 0.10, few masks).
    - Reason: val loss cannot see the generator failure.
    - Result:
+8. **E_grid_multi** (added 2026-11-08 22:20 UTC-5, before any v2 result; training clicks are the
+   real 16x16 generator grid points that land on a parcel, tokens 1-3).
+   - Prediction: about equal to D, possibly slightly better; still limited by grid coverage
+     (only ~32% of parcels get a grid point at pps=16, Phase C), so the gain over baseline is small.
+   - Reason: matches the generator's prompt distribution exactly, but cannot help parcels
+     that receive no grid point.
+   - Result:
 
 What each result would refute: if D does not beat A, prompt/token alignment is not the factor;
 if the grid sweep beats every trained run, the bottleneck is prompt density, not the decoder.
