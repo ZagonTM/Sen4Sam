@@ -123,7 +123,7 @@ RES_D = [
     "(selection kept epoch 0) although masks improve (filters off: E_loss "
     f"{N('e_loss_test_nofilter_iou')} vs {N('filters_off_test_iou')}). **IoU-head loss off** (grid prompts, "
     f"tokens 1–3): test **{N('e_noiou_test_iou', '{:.3f}')}**, Δ +0.085 [+0.080, +0.091], the first fine-tune "
-    f"that beats frozen SAM. Negative clicks + step-level selection: {N('f_iouoff_test_iou')}.",
+    f"that beats frozen SAM at default filters (filters off alone: 0.262). Negative clicks + step-level selection: {N('f_iouoff_test_iou')}.",
 ]
 CAPTION_C = "Fig. 3. Test mean best IoU with SAM's filters on / off (m/p = masks per patch)."
 CAPTION_V1 = "Fig. 4. v1: val bars = prompted mask IoU; test bars = automatic generator, mean best IoU."
@@ -135,7 +135,7 @@ CONCLUSIONS = [
     f"filters calibrated on another domain (off: {N('v1_test_iou_untrained')} → {N('filters_off_test_iou')}), and "
     f"the train/inference prompt mismatch (v1: {N('v1_test_iou_finetuned')}).",
     "• **Do not retrain the IoU head under fixed thresholds**, or recalibrate the thresholds: with its loss off, "
-    f"the decoder beats frozen SAM ({N('v1_test_iou_untrained')} → {N('e_noiou_test_iou')}).",
+    f"the decoder beats default frozen SAM ({N('v1_test_iou_untrained')} → {N('e_noiou_test_iou')}).",
     "• **Validate on the deployment pipeline:** proxy gains (val prompted IoU) predicted the opposite of test.",
 ]
 LIMITS = ("Limits: one seed; 150 training patches; pps 64 on 40 Spanish patches only; timings on a shared GPU.")

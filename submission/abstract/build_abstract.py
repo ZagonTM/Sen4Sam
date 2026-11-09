@@ -118,11 +118,11 @@ RESULTS = [
     f"**Cost 3: training prompt ≠ inference prompt.** v1 raised centroid-prompt validation IoU "
     f"({v('v1_val_mask_iou_before')} → {v('v1_val_mask_iou_after')}) but the generator fell to "
     f"{v('v1_test_iou_finetuned')}. In v2, every configuration that also trained the IoU head lowered the generator's "
-    "validation IoU at all three learning rates, so selection kept epoch 0. "
-    f"With filters off, however, the loss-selected grid model (E_loss) beats the frozen masks "
+    "validation IoU at all three learning rates (selection kept epoch 0). "
+    f"With filters off, the loss-selected grid model (E_loss) beats the frozen masks "
     f"({v('e_loss_test_nofilter_iou')} vs. {v('filters_off_test_iou')}): the masks get better, and the recalibrated "
     "IoU head under the fixed 0.5 threshold discards them. With the IoU-head loss off (grid prompts, tokens 1–3, "
-    f"E_noiou) the fine-tune beats the frozen model for the first time (Δ {v('e_noiou_test_delta_ci_3dp')}); "
+    f"E_noiou) the fine-tune beats the frozen default (not frozen SAM with filters off; Δ {v('e_noiou_test_delta_ci_3dp')}); "
     f"negative clicks (F) reach {v('f_iouoff_test_iou')}. Expectations written before the results were refuted on: D "
     "best, trained masks equal with filters off (+0.042), F gain ≤ +0.02 (+0.057).",
 ]
