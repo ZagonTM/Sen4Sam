@@ -37,7 +37,7 @@ Keep download/preprocessing defaults: seeds are fixed so every run yields the sa
 
 - `results/`: `split.csv` (input, root), `baseline/` (eval_patches/eval_summary/eval_baseline.log/explanation.md), `v1_nb07/` (notebook-07 outputs), `phase_c/` (from `analysis/phase_c.py`), `v2/` (pod experiment outputs).
 - `submission/abstract/` and `submission/poster/`: `draft.md` + `build_*.py` (rebuild with `uv run --with python-docx --with pillow python submission/abstract/build_abstract.py` and `uv run --with python-pptx --with qrcode --with pillow python submission/poster/build_poster.py`).
-- `course/` (gitignored): assignment PDF, `templates/` for WAIMLAp templates. `docs/handoff.md`: project handoff.
+- `course/` (gitignored): assignment PDF, `templates/` for WAIMLAp templates.
 
 ## Notebooks
 

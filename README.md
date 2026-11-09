@@ -26,7 +26,7 @@ analysis/    phase_c.py: domain-shift analysis -> results/phase_c/
 scripts/     pod setup and experiment runner (RunPod)
 notebooks/   narrative, experiments, plots — English and Spanish versions
              (00_{en,es}_data_availability, 01_{en,es}_base_model_teardown)
-docs/        data_{en,es}.md, decisions_{en,es}.md (decision log), changes.md, handoff.md
+docs/        data_{en,es}.md, decisions_{en,es}.md (decision log), changes.md
 results/
   split.csv                fixed split (input to training/eval)
   baseline/                frozen-model baseline: eval_patches.csv, eval_summary.csv, eval_baseline.log, explanation.md
