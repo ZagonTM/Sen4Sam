@@ -241,13 +241,13 @@ val (salvo `A_loss_select`). Las líneas "Resultado:" se llenan después, sin ed
      modelo v1 con filtros apagados el IoU se recupera en gran parte hacia el nivel base.
    - Razón: si el IoU se recupera, la culpa es de la cabeza de IoU/estabilidad (filtrado); si
      sigue bajo, las máscaras mismas empeoraron.
-   - Resultado:
+   - Resultado: **CONFIRMADO.** Sin entrenar: filtros apagados 0.262 vs encendidos 0.156 (329 vs 79 máscaras/parche; Δ +0.106 [+0.100, +0.112]). `A_loss_select` (estilo v1): apagados 0.249 vs encendidos 0.092, frente a 0.262 sin entrenar apagado (Δ -0.013): el IoU casi se recupera; la caída venía de los filtros, no de las máscaras.
 2. **Barrido de `points_per_side` 16 / 32 / 64** (primeros `SWEEP_LIMIT` parches de test).
    - Predicción: 32 y 64 suben recall y IoU medio, sobre todo en campos pequeños y en España;
      el tiempo crece ~cuadráticamente (≈4× y ≈16× frente a 16).
    - Razón: a 16 una parcela mediana recibe clic ~20 % de las veces; más puntos reducen el
      coste del prompt en cobertura, con retornos decrecientes.
-   - Resultado:
+   - Resultado: **PARCIAL.** 40 parches, pps 16/32/64: IoU 0.083 / 0.146 / 0.185, 1.0 / 8.9 / 17.7 s por parche. Ganancia CONFIRMADA (pps32 en 132 parches de test: 0.253 vs 0.156). "Sobre todo España" REFUTADO: en 132 parches la ganancia es ES +0.067, FR +0.126. El tiempo creció ~9x y ~18x, no ~4x y ~16x (GPU compartida, ruidoso). No se midió el desglose por campos pequeños.
 
 **Corridas entrenadas**
 
@@ -255,25 +255,25 @@ val (salvo `A_loss_select`). Las líneas "Resultado:" se llenan después, sin ed
    - Predicción: mejora modesta o nula frente a la línea base (~0.16); mejor que v1 porque la
      selección usa el generador.
    - Razón: sigue entrenando solo el token 0 con prompts que el generador no usa.
-   - Resultado:
+   - Resultado: **CONFIRMADO (trivialmente).** Se conservó la época 0 (IoU generador en val 0.121 -> 0.082 tras la época 1), así que test = sin entrenar: 0.156, Δ 0.000, 78.6 máscaras/parche. Sin ganancia, como se predijo, pero solo porque se eligieron los pesos sin entrenar.
 4. **B_centroid_multi** (centroide, pérdida en tokens 1–3, mejor de tres).
    - Predicción: algo mejor que A.
    - Razón: el generador usa los tokens 1–3, así que se alinea entrenamiento y uso.
-   - Resultado:
+   - Resultado: **REFUTADO.** Se conservó la época 0 (val 0.121 -> 0.079 tras la época 1); test 0.156 = sin entrenar = A. No es mejor que A (val época 1: 0.079 vs 0.082).
 5. **C_random_tok0** (puntos aleatorios, token 0).
    - Predicción: mejor que A, peor que D.
    - Razón: los puntos aleatorios imitan la rejilla del generador (incluye puntos fuera de
      centro y de fondo), pero el token 0 sigue desalineado.
-   - Resultado:
+   - Resultado: **REFUTADO.** Se conservó la época 0 (val 0.121 -> 0.093 tras la época 1); test 0.156 = sin entrenar. No se observó el orden A < C < D (val época 1: C 0.093 > D 0.082 > A 0.082).
 6. **D_random_multi** (puntos aleatorios, tokens 1–3).
    - Predicción: **la mejor** de las cuatro y por encima de la línea base.
    - Razón: es la única que alinea tanto la distribución de prompts como los tokens con lo que
      hace el generador en inferencia.
-   - Resultado:
+   - Resultado: **REFUTADO.** Se conservó la época 0 (val 0.121 -> 0.082 tras la época 1); test 0.156 = sin entrenar: ni sobre la línea base ni la mejor de las cuatro (val época 1: E 0.110 > C 0.093 > A 0.082 ~ D 0.082 > B 0.079).
 7. **A_loss_select** (como A pero parada por pérdida de val; replica v1).
    - Predicción: **la peor**; reproduce el colapso (IoU test <0.10, pocas máscaras).
    - Razón: la pérdida de val no ve el fallo del generador.
-   - Resultado:
+   - Resultado: **CONFIRMADO.** Época elegida 4: test 0.092 (Δ -0.064 [-0.073, -0.057]), 63.5 máscaras/parche vs 78.6 (< 0.10, menos máscaras). Con filtros apagados: 0.249.
 8. **E_grid_multi** (añadida 2026-11-08 22:20 UTC-5, antes de cualquier resultado v2; los clics de
    entrenamiento son los puntos reales de la rejilla 16x16 del generador que caen en una parcela,
    tokens 1–3).
@@ -282,7 +282,7 @@ val (salvo `A_loss_select`). Las líneas "Resultado:" se llenan después, sin ed
      sobre la línea base será pequeña.
    - Razón: reproduce exactamente la distribución de prompts del generador, pero no puede ayudar
      a parcelas que no reciben ningún punto.
-   - Resultado:
+   - Resultado: **PARCIAL.** Se conservó la época 0 (val 0.121 -> 0.110 tras la época 1, la menor caída de A-E); test 0.156 = sin entrenar, Δ 0.000. Igual a D en test (ambos = sin entrenar) y sin ganancia sobre la línea base; solo coincide con "ganancia pequeña" si esta es cero.
 
 9. **Seguimiento, añadido 2026-11-08 22:35 UTC-5 tras ver que A–E conservaron la época 0**
    (todas las configuraciones bajaron la métrica del generador en val tras una época con lr 3e-5):
@@ -291,7 +291,7 @@ val (salvo `A_loss_select`). Las líneas "Resultado:" se llenan después, sin ed
      ruido (|Δ| < 0.01 en IoU medio); E_grid queda más cerca de la línea base que D.
    - Razón: si la supervisión densa desplaza la cabeza IoU / las máscaras fuera del punto de
      operación del generador, un paso menor solo ralentiza el desplazamiento.
-   - Resultado:
+   - Resultado: **CONFIRMADO.** Las cuatro corridas (D, E con lr 1e-5 y 3e-6) conservaron la época 0; Δ vs sin entrenar = 0.000 en test (|Δ| < 0.01). En val tras la época 1 aún cayó: D 0.082 / 0.091, E 0.109 / 0.113 (vs 0.121), E más cerca de la línea base que D. Un lr menor frenó la caída pero no la eliminó.
 
 10. **Diagnóstico error-de-código vs hallazgo, añadido 2026-11-08 22:37 UTC-5 antes de resultados.**
    (a) E_grid_multi seleccionada por pérdida de val (conserva pesos entrenados) y evaluada sin filtros;
@@ -301,7 +301,7 @@ val (salvo `A_loss_select`). Las líneas "Resultado:" se llenan después, sin ed
      pred_iou_thresh; (b) pierde menos que E.
    - Razón: el entrenamiento calibra la cabeza IoU al IoU real de la parcela (más bajo que las
      puntuaciones optimistas de SAM), y más máscaras quedan bajo el umbral fijo 0.5.
-   - Resultado:
+   - Resultado: **PARCIAL.** (a) `E_loss` (pesos entrenados): filtros encendidos 0.137 (Δ -0.019 [-0.024, -0.015], 76 máscaras); apagados 0.305 vs 0.262 sin entrenar (Δ +0.042 [+0.039, +0.046]). "|Δ| < 0.01 apagado" REFUTADO (las máscaras entrenadas son mejores), pero la caída con filtros sí viene de la cabeza de IoU + umbral fijo. (b) `E_noiou`: test 0.242, Δ +0.085 [+0.080, +0.091], 277.6 máscaras, apagado 0.305: CONFIRMADO (no pierde, gana).
 
 11. **Corrida con correcciones de diseño F_fixed, añadida 2026-11-08 22:42 UTC-5 antes de
    resultados:** prompts de rejilla, tokens 1–3, puntos de rejilla sobre fondo como negativos
@@ -312,11 +312,18 @@ val (salvo `A_loss_select`). Las líneas "Resultado:" se llenan después, sin ed
    - Razón: corrige el desajuste entrenamiento/inferencia (clics de fondo, tokens, número de pasos),
      pero la rejilla sigue sin tocar la mayoría de parcelas pequeñas: el prompt sigue siendo el
      cuello de botella.
-   - Resultado:
+   - Resultado: **PARCIAL.** `F_iouon` (pérdida IoU encendida): mejor en el paso 0, test 0.156, Δ 0.000: empate, CONFIRMADO. `F_iouoff` (pérdida IoU apagada): mejor paso 2100, val 0.121 -> 0.180, test 0.213, Δ +0.057 [+0.052, +0.062]: REFUTADO (mayor que +0.02). La brecha con pps64 no se cierra: pps32 solo da 0.253 en 132 parches y pps64 +0.102 en 40.
 
 Hipótesis que cada resultado refuta: si D no supera a A, la alineación de prompt/token no es
 el factor; si el barrido de rejilla supera a todas las corridas entrenadas, el cuello de
 botella es la densidad del prompt y no el decodificador.
+
+### 4.3 Fase B v2 — conclusión
+
+- La caída de v1 vino de entrenar la cabeza de IoU bajo umbrales fijos de SA-1B (`pred_iou_thresh`, estabilidad), no de las máscaras: con filtros apagados, el modelo estilo v1 queda a -0.013 del no entrenado (0.249 vs 0.262), y las máscaras de `E_loss` superan al no entrenado (0.305 vs 0.262).
+- Sin pérdida en la cabeza de IoU, el ajuste del decodificador sí ayuda: `E_noiou` 0.242 vs 0.156 (Δ +0.085 [+0.080, +0.091]); `F_iouoff` 0.213 (+0.057). Toda corrida con pérdida de IoU encendida conservó la época 0 (= sin entrenar).
+- Sin entrenar nada, la densidad de prompts (pps32: 0.253 en 132 parches; pps64: +0.102 en 40) y apagar los filtros (0.262) aportan cada uno ≈ +0.10, con mayor costo (pps32/64 ~9x/18x más lentos; filtros apagados dan ~329 máscaras/parche).
+- Verificación: evaluación independiente en parches gen-val 0.1212 = métrica en entrenamiento 0.12124; la auditoría de código no halló errores.
 
 ## 5. Fase C — cambio de dominio y honestidad
 

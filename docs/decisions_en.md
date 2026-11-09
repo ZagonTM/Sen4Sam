@@ -83,13 +83,13 @@ are filled in later, without editing the prediction.
      with filters off, IoU recovers largely toward the baseline level.
    - Reason: if IoU recovers, filtering (IoU head / stability) is at fault; if it stays low,
      the masks themselves got worse.
-   - Result:
+   - Result: **CONFIRMED.** Untrained: filters off 0.262 vs on 0.156 (329 vs 79 masks/patch; Δ +0.106 [+0.100, +0.112]). v1-style `A_loss_select`: off 0.249 vs on 0.092, versus untrained-off 0.262 (Δ -0.013), so IoU recovers almost fully: the filters, not the masks, caused the drop.
 2. **`points_per_side` sweep 16 / 32 / 64** (first `SWEEP_LIMIT` test patches).
    - Prediction: 32 and 64 raise recall and mean IoU, especially for small fields and Spain;
      time grows roughly quadratically (~4x and ~16x versus 16).
    - Reason: at 16 a median parcel gets a click ~20% of the time; more points cut the prompt
      cost in coverage, with diminishing returns.
-   - Result:
+   - Result: **PARTLY.** 40 patches, pps 16/32/64: IoU 0.083 / 0.146 / 0.185, 1.0 / 8.9 / 17.7 s per patch. Gain CONFIRMED (pps32 on 132 test patches: 0.253 vs 0.156). "Especially Spain" REFUTED: on 132 patches the gain is ES +0.067, FR +0.126. Time grew ~9x and ~18x, not ~4x and ~16x (shared GPU, noisy). Small-field breakdown not measured.
 
 **Trained runs**
 
@@ -97,32 +97,32 @@ are filled in later, without editing the prediction.
    - Prediction: modest or no gain over baseline (~0.16); better than v1 because selection
      uses the generator.
    - Reason: still trains only token 0 with prompts the generator does not use.
-   - Result:
+   - Result: **CONFIRMED (trivially).** Epoch 0 kept (val generator IoU 0.121 -> 0.082 after epoch 1), so test = untrained: 0.156, Δ 0.000, 78.6 masks/patch. No gain, as predicted, but only because the untrained weights were selected.
 4. **B_centroid_multi** (centroid, loss on tokens 1-3, best of three).
    - Prediction: somewhat better than A.
    - Reason: the generator uses tokens 1-3, so training matches use.
-   - Result:
+   - Result: **REFUTED.** Epoch 0 kept (val 0.121 -> 0.079 after epoch 1); test 0.156 = untrained = A. Not better than A (ep-1 val 0.079 vs 0.082).
 5. **C_random_tok0** (random points, token 0).
    - Prediction: better than A, worse than D.
    - Reason: random points mimic the generator grid (off-centre and background points), but
      token 0 is still mismatched.
-   - Result:
+   - Result: **REFUTED.** Epoch 0 kept (val 0.121 -> 0.093 after epoch 1); test 0.156 = untrained. Ordering A < C < D not observed (ep-1 val: C 0.093 > D 0.082 > A 0.082).
 6. **D_random_multi** (random points, tokens 1-3).
    - Prediction: **best** of the four and above baseline.
    - Reason: only run matching both prompt distribution and tokens to what the generator does
      at inference.
-   - Result:
+   - Result: **REFUTED.** Epoch 0 kept (val 0.121 -> 0.082 after epoch 1); test 0.156 = untrained, not above baseline and not best of the four (ep-1 val: E 0.110 > C 0.093 > A 0.082 ~ D 0.082 > B 0.079).
 7. **A_loss_select** (as A but stopped on val loss; replicates v1).
    - Prediction: **worst**; reproduces the collapse (test IoU < 0.10, few masks).
    - Reason: val loss cannot see the generator failure.
-   - Result:
+   - Result: **CONFIRMED.** Selected epoch 4: test 0.092 (Δ -0.064 [-0.073, -0.057]), 63.5 masks/patch vs 78.6 (< 0.10, fewer masks). With filters off: 0.249.
 8. **E_grid_multi** (added 2026-11-08 22:20 UTC-5, before any v2 result; training clicks are the
    real 16x16 generator grid points that land on a parcel, tokens 1-3).
    - Prediction: about equal to D, possibly slightly better; still limited by grid coverage
      (only ~32% of parcels get a grid point at pps=16, Phase C), so the gain over baseline is small.
    - Reason: matches the generator's prompt distribution exactly, but cannot help parcels
      that receive no grid point.
-   - Result:
+   - Result: **PARTLY.** Epoch 0 kept (val 0.121 -> 0.110 after epoch 1, the smallest drop of A-E); test 0.156 = untrained, Δ 0.000. Equal to D on test (both = untrained) and no gain over baseline, which matches "small gain" only as zero.
 9. **Follow-up, added 2026-11-08 22:35 UTC-5 after seeing that A-E all kept epoch 0** (every
    config lowered the generator metric on val after one epoch at lr 3e-5): E_grid_multi and
    D_random_multi at lr 1e-5 and 3e-6.
@@ -130,7 +130,7 @@ are filled in later, without editing the prediction.
      noise (|Δ| < 0.01 mean best IoU); E_grid stays closer to baseline than D.
    - Reason: if dense supervision itself shifts the IoU head / masks away from the generator's
      operating point, a smaller step only slows the shift.
-   - Result:
+   - Result: **CONFIRMED.** All four runs (D, E at lr 1e-5 and 3e-6) kept epoch 0; Δ vs untrained = 0.000 on test (|Δ| < 0.01). Val after epoch 1 still fell: D 0.082 / 0.091, E 0.109 / 0.113 (vs 0.121), E closer to baseline than D. Lower lr slowed but did not remove the drop.
 
 10. **Bug-vs-finding diagnostics, added 2026-11-08 22:37 UTC-5 before results.**
    (a) E_grid_multi selected by val loss (keeps trained weights) and evaluated with filters off;
@@ -139,7 +139,7 @@ are filled in later, without editing the prediction.
      the filtered drop comes from the IoU head + fixed pred_iou_thresh; (b) loses less than E.
    - Reason: training calibrates the IoU head to true parcel IoU (lower than SAM's optimistic
      scores), so more masks fall under the fixed 0.5 threshold.
-   - Result:
+   - Result: **PARTLY.** (a) `E_loss` (trained weights): filters on 0.137 (Δ -0.019 [-0.024, -0.015], 76 masks); filters off 0.305 vs untrained-off 0.262 (Δ +0.042 [+0.039, +0.046]). "|Δ| < 0.01 off" REFUTED (trained masks are better), but the filtered drop does come from the IoU head + fixed threshold. (b) `E_noiou`: test 0.242, Δ +0.085 [+0.080, +0.091], 277.6 masks, off 0.305: CONFIRMED (loses nothing, gains).
 
 11. **Design-fix run F_fixed, added 2026-11-08 22:42 UTC-5 before results:** grid prompts,
    tokens 1-3, background grid points as negatives (target empty mask, IoU 0; --neg-frac 0.3),
@@ -148,10 +148,17 @@ are filled in later, without editing the prediction.
      it will not close the gap to pps=64 (+0.10 on the 40-patch subset).
    - Reason: fixes the train/inference mismatch (background clicks, tokens, step count), but the
      grid still misses most small parcels, so the prompt remains the bottleneck.
-   - Result:
+   - Result: **PARTLY.** `F_iouon` (IoU loss on): best at step 0, test 0.156, Δ 0.000: tie, CONFIRMED. `F_iouoff` (IoU loss off): best step 2100, val 0.121 -> 0.180, test 0.213, Δ +0.057 [+0.052, +0.062]: REFUTED (larger than +0.02). Gap to pps64 not closed: pps32 alone gives 0.253 on 132 patches and pps64 +0.102 on 40.
 
 What each result would refute: if D does not beat A, prompt/token alignment is not the factor;
 if the grid sweep beats every trained run, the bottleneck is prompt density, not the decoder.
+
+### 4.3 Phase B v2 — conclusion
+
+- The drop seen in v1 came from training the IoU head under fixed SA-1B thresholds (`pred_iou_thresh`, stability), not from the masks: with filters off, the v1-style model is within -0.013 of untrained (0.249 vs 0.262), and `E_loss` masks are better than untrained (0.305 vs 0.262).
+- Without IoU-head loss, fine-tuning the decoder helps: `E_noiou` 0.242 vs 0.156 (Δ +0.085 [+0.080, +0.091]); `F_iouoff` 0.213 (+0.057). Every run with IoU loss on kept epoch 0 (= untrained).
+- Without any training, prompt density (pps32: 0.253 on 132 patches; pps64: +0.102 on 40) and turning the filters off (0.262) each give about +0.10, at higher cost (pps32/64 are ~9x/18x slower; filters off yields ~329 masks/patch).
+- Sanity check: standalone eval on gen-val patches 0.1212 equals the in-training metric 0.12124; code audit found no bug.
 
 ## AI assistance (explicitly disclosed)
 
