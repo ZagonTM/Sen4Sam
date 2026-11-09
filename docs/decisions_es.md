@@ -284,6 +284,15 @@ val (salvo `A_loss_select`). Las líneas "Resultado:" se llenan después, sin ed
      a parcelas que no reciben ningún punto.
    - Resultado:
 
+9. **Seguimiento, añadido 2026-11-08 22:35 UTC-5 tras ver que A–E conservaron la época 0**
+   (todas las configuraciones bajaron la métrica del generador en val tras una época con lr 3e-5):
+   E_grid_multi y D_random_multi con lr 1e-5 y 3e-6.
+   - Predicción: un lr menor reduce el daño pero no supera al modelo sin entrenar más allá del
+     ruido (|Δ| < 0.01 en IoU medio); E_grid queda más cerca de la línea base que D.
+   - Razón: si la supervisión densa desplaza la cabeza IoU / las máscaras fuera del punto de
+     operación del generador, un paso menor solo ralentiza el desplazamiento.
+   - Resultado:
+
 Hipótesis que cada resultado refuta: si D no supera a A, la alineación de prompt/token no es
 el factor; si el barrido de rejilla supera a todas las corridas entrenadas, el cuello de
 botella es la densidad del prompt y no el decodificador.

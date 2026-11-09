@@ -123,6 +123,14 @@ are filled in later, without editing the prediction.
    - Reason: matches the generator's prompt distribution exactly, but cannot help parcels
      that receive no grid point.
    - Result:
+9. **Follow-up, added 2026-11-08 22:35 UTC-5 after seeing that A-E all kept epoch 0** (every
+   config lowered the generator metric on val after one epoch at lr 3e-5): E_grid_multi and
+   D_random_multi at lr 1e-5 and 3e-6.
+   - Prediction: lower lr reduces the damage but does not beat the untrained model by more than
+     noise (|Δ| < 0.01 mean best IoU); E_grid stays closer to baseline than D.
+   - Reason: if dense supervision itself shifts the IoU head / masks away from the generator's
+     operating point, a smaller step only slows the shift.
+   - Result:
 
 What each result would refute: if D does not beat A, prompt/token alignment is not the factor;
 if the grid sweep beats every trained run, the bottleneck is prompt density, not the decoder.
