@@ -1,0 +1,8 @@
+model,n_on,n_off,iou_on,iou_off,masks_on,masks_off,delta_off_minus_on,ci_lo,ci_hi
+untrained,132,0,0.1563,,78.6061,,,,
+A_centroid_tok0,132,0,0.1563,,78.6061,,,,
+B_centroid_multi,132,0,0.1563,,78.6061,,,,
+C_random_tok0,132,0,0.1563,,78.6061,,,,
+D_random_multi,132,0,0.1563,,78.6061,,,,
+E_grid_multi,132,0,0.1563,,78.6061,,,,
+A_loss_select,132,0,0.0918,,63.5455,,,,

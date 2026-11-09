@@ -1,0 +1,8 @@
+run,lr,prompt,tokens,select_by,best_epoch,val_gen_iou_ep0,test_iou_filters_on,test_iou_filters_off,frac_gt05,masks_per_patch,n_test,epochs_run,val_gen_iou_ep1,val_gen_iou_best,delta_vs_untrained,delta_ci_lo,delta_ci_hi,delta_nofilter_vs_untrained_nofilter,delta_nf_ci_lo,delta_nf_ci_hi
+untrained,,grid16,-,-,0,,0.1563,,0.1430,78.6061,132,,,,,,,,,
+A_centroid_tok0,0.0000,centroid,0,generator,0,0.1212,0.1563,,0.1430,78.6061,132,2.0000,0.0818,0.1212,0.0000,0.0000,0.0000,,,
+B_centroid_multi,0.0000,centroid,multi,generator,0,0.1212,0.1563,,0.1430,78.6061,132,2.0000,0.0787,0.1212,0.0000,0.0000,0.0000,,,
+C_random_tok0,0.0000,random,0,generator,0,0.1212,0.1563,,0.1430,78.6061,132,2.0000,0.0933,0.1212,0.0000,0.0000,0.0000,,,
+D_random_multi,0.0000,random,multi,generator,0,0.1212,0.1563,,0.1430,78.6061,132,2.0000,0.0822,0.1212,0.0000,0.0000,0.0000,,,
+E_grid_multi,0.0000,grid,multi,generator,0,0.1212,0.1563,,0.1430,78.6061,132,2.0000,0.1103,0.1212,0.0000,0.0000,0.0000,,,
+A_loss_select,0.0000,centroid,0,loss,4,,0.0918,,0.0827,63.5455,132,6.0000,,,-0.0644,-0.0725,-0.0565,,,
