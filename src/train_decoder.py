@@ -71,14 +71,18 @@ def grid_points(n_per_side, hw=ORIG_HW):
     return build_point_grid(n_per_side) * np.array(hw)[None, ::-1]
 
 
-def build_table(processed, patches, per_patch, seed, prompt="centroid", grid_pps=16):
+def build_table(processed, patches, per_patch, seed, prompt="centroid", grid_pps=16, neg_frac=0.0):
     """Training / validation rows: patch, parcel id, click (cx, cy) in patch pixels.
 
     centroid / random: one row per parcel (cx, cy = centroid; random draws its click later).
     grid: one row per generator grid point that lands on a parcel (target = that parcel).
     Pixel j covers [j, j+1) in SAM's coordinate convention, so a pixel centre is j + 0.5.
+    neg_frac > 0 (grid only): per patch, add about neg_frac x (positive rows of that patch) grid points
+    that land on background (parcels == 0) as rows with parcel_id = 0 (target = empty mask).
+    They are drawn with a separate RNG, so the positive rows are identical to neg_frac = 0.
     """
     rng = np.random.RandomState(seed)
+    neg_rng = np.random.RandomState(seed + 7919)
     rows = []
     for patch in patches:
         parcels = load_parcels(processed, patch)
@@ -96,6 +100,12 @@ def build_table(processed, patches, per_patch, seed, prompt="centroid", grid_pps
                 continue
             size = len(cand) if per_patch <= 0 else min(per_patch, len(cand))
             rows += [cand[k] for k in rng.choice(len(cand), size=size, replace=False)]
+            if neg_frac > 0:
+                neg = [{"patch": patch, "parcel_id": 0, "cx": float(x), "cy": float(y)}
+                       for x, y in grid_points(grid_pps, parcels.shape) if parcels[int(y), int(x)] == 0]
+                n_neg = min(len(neg), int(round(neg_frac * size)))
+                if n_neg:
+                    rows += [neg[k] for k in neg_rng.choice(len(neg), size=n_neg, replace=False)]
             continue
         ids = sorted(valid)
         size = len(ids) if per_patch <= 0 else min(per_patch, len(ids))
@@ -182,11 +192,24 @@ class Trainer:
             sparse_prompt_embeddings=sparse, dense_prompt_embeddings=dense,
             repeat_image=False, high_res_features=f["high_res_feats"])
 
-        gt = torch.tensor((f["parcels"] == row["parcel_id"]).astype(np.float32),
-                          device=embed.device)[None, None]
-        gt = F.interpolate(gt, size=masks.shape[-2:], mode="nearest")
+        negative = row["parcel_id"] == 0                    # background click (--neg-frac), empty target
+        if negative:
+            gt = torch.zeros((1, 1) + tuple(masks.shape[-2:]), dtype=torch.float32, device=embed.device)
+        else:
+            gt = torch.tensor((f["parcels"] == row["parcel_id"]).astype(np.float32),
+                              device=embed.device)[None, None]
+            gt = F.interpolate(gt, size=masks.shape[-2:], mode="nearest")
 
-        if self.args.tokens == "0":
+        if negative:
+            # Dice is ill-defined on an empty target (with eps it is ~0 or ~1, no useful gradient), so
+            # negatives use mean BCE-with-logits of the mask logits vs all zeros instead. It is finite,
+            # ~0 when every logit is very negative, and pushes all pixels below 0. Same token rule as
+            # positives: token 0, or min over tokens 1-3. Logged in the "dice" column.
+            tok = masks[:, 0:1] if self.args.tokens == "0" else masks[:, 1:4]
+            per_tok = F.binary_cross_entropy_with_logits(
+                tok, torch.zeros_like(tok), reduction="none").mean(dim=(0, 2, 3))
+            dice = per_tok.min()
+        elif self.args.tokens == "0":
             dice = dice_loss(torch.sigmoid(masks[:, 0:1]), gt)
         else:                                              # tokens 1-3, best of three
             probs = torch.sigmoid(masks[:, 1:4])
@@ -196,7 +219,7 @@ class Trainer:
             binary = (masks > 0).float()
             inter = (binary * gt).sum(dim=(-2, -1))
             union = binary.sum(dim=(-2, -1)) + gt.sum(dim=(-2, -1)) - inter
-            true_iou = inter / union.clamp(min=1.0)        # (1, 4)
+            true_iou = inter / union.clamp(min=1.0)        # (1, 4); empty target -> 0 for every token
         iou_loss = F.mse_loss(iou_pred, true_iou)
 
         loss = dice + self.args.iou_weight * iou_loss
@@ -246,6 +269,11 @@ def main():
                     help="val patches for the generator metric (--select-by generator)")
     ap.add_argument("--accum", type=int, default=1, help="parcels per optimizer step")
     ap.add_argument("--seed", type=int, default=42)
+    ap.add_argument("--eval-every", type=int, default=0,
+                    help="also validate / select / early-stop every N optimizer steps (0 = per epoch only); "
+                         "patience then counts evaluations")
+    ap.add_argument("--neg-frac", type=float, default=0.0,
+                    help="--prompt grid only: add ~F x positives background grid points as empty-mask rows")
     args = ap.parse_args()
 
     out = Path(args.out)
@@ -258,10 +286,15 @@ def main():
     train_patches = pick_patches(split, "train", args.train_patches, args.seed)
     val_patches = pick_patches(split, "val", args.val_patches, args.seed)
     gen_patches = pick_patches(split, "val", args.gen_val_patches, args.seed + 1)
+    if args.neg_frac > 0 and args.prompt != "grid":
+        print("warning: --neg-frac only applies to --prompt grid; ignored")
     train_rows = build_table(args.processed, train_patches, args.parcels_per_patch, args.seed,
-                             args.prompt, args.grid_pps)
+                             args.prompt, args.grid_pps, args.neg_frac if args.prompt == "grid" else 0.0)
     val_rows = build_table(args.processed, val_patches, args.val_parcels_per_patch, args.seed,
                            args.prompt, args.grid_pps)
+    n_neg = sum(r["parcel_id"] == 0 for r in train_rows)
+    if n_neg:
+        print(f"train: {n_neg} of the rows are background (negative) grid points")
     print(f"train: {len(train_rows)} parcels / {len(train_patches)} patches | "
           f"val: {len(val_rows)} parcels / {len(val_patches)} patches | generator val: {len(gen_patches)} patches")
 
@@ -302,49 +335,74 @@ def main():
     history = []
     v = validate()
     g = generator_metric() if args.select_by == "generator" else float("nan")
-    history.append({"epoch": 0, **{f"val_{k}": x for k, x in v.items()}, "val_gen_mean_best_iou": g})
+    history.append({"epoch": 0, "step": 0, **{f"val_{k}": x for k, x in v.items()}, "val_gen_mean_best_iou": g})
     print(f"epoch 0 (untrained): val_loss={v['loss']:.4f} val_mask_iou={v['mask_iou']:.4f} gen_iou={g:.4f}")
-    best_score, best_epoch, best_state, bad = score_of(v, g), 0, trainer.state(), 0
+    best_score, best_epoch, best_step, best_state, bad = score_of(v, g), 0, 0, trainer.state(), 0
+
+    def evaluate(epoch, step, stats, t0):
+        """Validate, log a history row, apply best-checkpoint / patience logic. Returns True to stop."""
+        nonlocal best_score, best_epoch, best_step, best_state, bad
+        tr = mean_stats(stats) if stats else {}
+        v = validate()
+        g = generator_metric() if args.select_by == "generator" else float("nan")
+        history.append({"epoch": epoch, "step": step, **{f"train_{k}": x for k, x in tr.items()},
+                        **{f"val_{k}": x for k, x in v.items()}, "val_gen_mean_best_iou": g})
+        score = score_of(v, g)
+        improved = score > best_score + args.min_delta
+        if improved:
+            best_score, best_epoch, best_step, best_state, bad = score, epoch, step, trainer.state(), 0
+            torch.save(best_state, out / "best_trainable.pt")
+        else:
+            bad += 1
+        print(f"epoch {epoch} step {step}: train_loss={tr.get('loss', float('nan')):.4f} "
+              f"val_loss={v['loss']:.4f} val_mask_iou={v['mask_iou']:.4f} gen_iou={g:.4f} | "
+              f"{time.time() - t0:.0f}s{' <- best' if improved else ''}", flush=True)
+        if bad >= args.patience:
+            unit = "evaluations" if args.eval_every > 0 else "epochs"
+            print(f"early stopping after {args.patience} {unit} without improvement; "
+                  f"best epoch {best_epoch} step {best_step}")
+            return True
+        return False
 
     train_rng = random.Random(args.seed + 1)
+    global_step, last_eval_step, stop = 0, 0, False
     for epoch in range(1, args.epochs + 1):
         t0 = time.time()
         order = list(range(len(train_rows)))
         train_rng.shuffle(order)
-        stats, n_in_step = [], 0
+        stats, n_in_step, window = [], 0, []
         optimizer.zero_grad()
         for idx in order:
             row = train_rows[idx]
             loss, s = trainer.step_loss(row, trainer.click(row, train_rng))
             (loss / args.accum).backward()
             n_in_step += 1
+            stats.append(s)
+            window.append(s)
             if n_in_step == args.accum:
                 optimizer.step()
                 optimizer.zero_grad()
                 n_in_step = 0
-            stats.append(s)
+                global_step += 1
+                if args.eval_every > 0 and global_step % args.eval_every == 0:
+                    # train_* columns of a mid-epoch row = mean over the steps since the last evaluation
+                    stop = evaluate(epoch, global_step, window, t0)
+                    last_eval_step, window = global_step, []
+                    if stop:
+                        break
+        if stop:
+            break
         if n_in_step:
             optimizer.step()
             optimizer.zero_grad()
+            global_step += 1
 
-        tr = mean_stats(stats)
-        v = validate()
-        g = generator_metric() if args.select_by == "generator" else float("nan")
-        history.append({"epoch": epoch, **{f"train_{k}": x for k, x in tr.items()},
-                        **{f"val_{k}": x for k, x in v.items()}, "val_gen_mean_best_iou": g})
-
-        score = score_of(v, g)
-        improved = score > best_score + args.min_delta
-        if improved:
-            best_score, best_epoch, best_state, bad = score, epoch, trainer.state(), 0
-            torch.save(best_state, out / "best_trainable.pt")
-        else:
-            bad += 1
-        print(f"epoch {epoch}: train_loss={tr['loss']:.4f} val_loss={v['loss']:.4f} "
-              f"val_mask_iou={v['mask_iou']:.4f} gen_iou={g:.4f} | {time.time() - t0:.0f}s"
-              f"{' <- best' if improved else ''}", flush=True)
-        if bad >= args.patience:
-            print(f"early stopping after {args.patience} epochs without improvement; best epoch {best_epoch}")
+        if global_step == last_eval_step:      # already evaluated at exactly this step
+            continue
+        # per-epoch row (unchanged behaviour when --eval-every 0: train_* = mean over the whole epoch)
+        stop = evaluate(epoch, global_step, stats if args.eval_every <= 0 else window, t0)
+        last_eval_step = global_step
+        if stop:
             break
 
     torch.save(best_state, out / "best_trainable.pt")
@@ -358,9 +416,11 @@ def main():
         writer.writeheader()
         writer.writerows(history)
     with open(out / "config.json", "w") as fh:
-        json.dump({**vars(args), "best_epoch": best_epoch, "epochs_run": len(history) - 1,
+        json.dump({**vars(args), "best_epoch": best_epoch, "best_step": best_step,
+                   "steps_run": global_step, "evals_run": len(history) - 1,
+                   "epochs_run": max(h["epoch"] for h in history),
                    "train_parcels": len(train_rows), "train_patches": len(train_patches)}, fh, indent=2)
-    print(f"done. best epoch {best_epoch}; weights: {out / 'best_trainable.pt'}")
+    print(f"done. best epoch {best_epoch} step {best_step}; weights: {out / 'best_trainable.pt'}")
 
 
 if __name__ == "__main__":
