@@ -1,0 +1,296 @@
+"""Build the WAIMLAp 2026 extended abstract (max. 2 pages incl. references) on top of the group's draft.
+
+Run from the repository root:
+
+    uv run --with python-docx --with pillow python submission/abstract/build_abstract.py
+
+Base document: submission/abstract/group_original.docx (official WAIMLAp template: header, page setup, fonts; title,
+authors, affiliations and e-mails are kept as they are). The script replaces the body text, adds Table 1 and Fig. 1 and
+writes submission/abstract/Abstract_SAM2_Cost_of_the_Prompt.docx.
+
+All result numbers come from submission/numbers.json. Values that are still pending ("{{KEY}}") are rendered visibly as
+"[KEY]" and listed at the end of the run. Phase A teardown facts (TEARDOWN below) are copied from the outputs of
+notebooks/01_en_base_model_teardown.ipynb.
+
+Export the PDF from Word (the template font Aptos is not available in LibreOffice):
+
+    osascript -e 'tell application "Microsoft Word"' -e 'open POSIX file "/abs/path/Abstract_SAM2_Cost_of_the_Prompt.docx"' \
+      -e 'save as active document file name "/abs/path/Abstract_SAM2_Cost_of_the_Prompt.pdf" file format format PDF' \
+      -e 'close active document saving no' -e 'end tell'
+"""
+import copy
+import json
+import re
+from pathlib import Path
+
+from docx import Document
+from docx.enum.table import WD_TABLE_ALIGNMENT
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.oxml.ns import qn
+from docx.shared import Cm, Pt
+from docx.text.paragraph import Paragraph
+
+ROOT = Path(__file__).resolve().parents[2]
+TEMPLATE = ROOT / "submission/abstract/group_original.docx"
+NUMBERS = ROOT / "submission/numbers.json"
+FIGURE = ROOT / "results/phase_c/fig_parcels_hit_vs_pps.png"
+OUT = ROOT / "submission/abstract/Abstract_SAM2_Cost_of_the_Prompt.docx"
+
+# ------------------------------------------------------------------------------------------------------------- NUMBERS
+N = json.loads(NUMBERS.read_text())
+PENDING = []
+
+
+def v(key, nd=3, pct=False, unit="", pd=0):
+    """Format numbers.json[key]; pending values ('{{X}}') become a visible '[X]'."""
+    x = N[key]
+    if isinstance(x, str) and x.startswith("{{"):
+        tag = x.strip("{}")
+        if tag not in PENDING:
+            PENDING.append(tag)
+        return f"[{tag}]"
+    if isinstance(x, str):
+        return x.replace("-", "−")
+    if pct:
+        return f"{x * 100:.{pd}f} %"
+    s = f"{x:,.{nd}f}" if isinstance(x, float) else f"{x:,}"
+    return s.replace("-", "−") + unit
+
+
+# Phase A facts, verified against the outputs of notebooks/01_en_base_model_teardown.ipynb
+TEARDOWN = {
+    "enc_share": "74.5 %",          # image_encoder 34.317 M params
+    "dec_share": "9.2 %",           # sam_mask_decoder 4.215 M params
+    "enc_gmacs": "133.6",           # image encoder, per image (1024 px)
+    "dec_gmacs": "1.37",            # mask decoder, per prompt
+    "ratio16": "2.6",               # decoder/encoder MACs at pps=16 (256 prompts)
+    "ratio32": "10.5",              # ... at pps=32 (1024 prompts)
+}
+T = TEARDOWN
+
+# ------------------------------------------------------------------------------------------------------------- CONTENT
+TITLE = "The Cost of the Prompt: Evaluating SAM 2 for Prompt-Free Agricultural Field Segmentation"
+
+INTRO = [
+    "Segment Anything (SAM) [2] and SAM 2 [1] segment natural images well when a user clicks on the object. Remote-sensing "
+    "pipelines have no user, so the prompt must be generated automatically, usually as a regular grid of points. We ask "
+    "*what this prompt costs* when a frozen SAM 2.1 segments agricultural parcels in Sentinel-2 images [4], and whether "
+    "adapting the mask decoder can pay that cost. We report three findings, two of them negative: a weak frozen baseline, a "
+    "decoder fine-tune that collapses under automatic prompting, and a failure analysis that places the bottleneck in "
+    "prompt density rather than in the decoder.",
+]
+METHOD = [
+    "**Data.** We use the Patches Assembled Dataset of Sen4AgriNet [3]: six Sentinel-2 tiles, three in Spain (ES) and three "
+    "in France (FR), seeded random sampling, cloud-free May 2019 acquisitions [5]. This gives 888 RGB patches of "
+    f"366 × 366 px (444 per country) with {v('parcels_total')} parcels of at least 20 px (median {v('parcel_median_px')} px, "
+    "about 11 × 11 px). Split by patch, stratified by tile: 624 train / 132 validation / 132 test.",
+    "**Model and metric.** Frozen SAM 2.1 with a Hiera-Small encoder [6] and the automatic mask generator (16 × 16 point "
+    "grid, predicted-IoU threshold 0.5, stability threshold 0.8). Each ground-truth parcel is scored by its best IoU over "
+    "all generated masks; we report the mean over parcels (mean best IoU) and the fraction of parcels with IoU > 0.5.",
+    f"**Phase A: teardown.** Forward hooks measure parameters and MACs. The image encoder holds {T['enc_share']} of the "
+    f"parameters and the mask decoder {T['dec_share']}. The encoder costs {T['enc_gmacs']} GMACs once per image, the "
+    f"decoder {T['dec_gmacs']} GMACs per prompt; at 16 × 16 points the decoder already costs {T['ratio16']}× the encoder, "
+    f"at 32 × 32 {T['ratio32']}×. In prompt-free mode the prompt, not the backbone, dominates compute.",
+    "**Phase B: decoder adaptation.** We train only the second two-way transformer layer and the IoU head of the mask "
+    "decoder (1.71 M parameters, 3.7 % of the model) with a Dice loss, encoder frozen. v1 trained on parcel-centroid "
+    "prompts and selected the checkpoint by validation loss. v2 is a controlled ablation with expectations written before "
+    "the results: training prompt (centroid, random point, generator grid point) × loss on token 0 or on tokens 1–3, "
+    "selected by the generator's own validation IoU, plus a v1 replicate selected by loss.",
+    "**Phase C: failure analysis.** We overlay the generator grid on the true parcel masks and count the parcels that "
+    "receive at least one point, by size and country; on the frozen model we sweep 16/32/64 points per side with runtime, "
+    "and evaluate with both filters off.",
+]
+RESULTS = [
+    f"**Baseline.** The frozen model reaches a mean best IoU of {v('baseline_all_mean_best_iou')} on all 888 patches; "
+    f"only {v('baseline_all_frac_iou_gt_05', pct=True, pd=1)} of parcels exceed IoU 0.5. Spain is much worse than France "
+    f"(field-weighted {v('baseline_es_mean_best_iou')} vs. {v('baseline_fr_mean_best_iou')}). Qualitatively, SAM finds "
+    "field boundaries but often merges neighbouring parcels.",
+    f"**v1 collapses under automatic prompting.** On validation with centroid prompts, mask IoU rose from "
+    f"{v('v1_val_mask_iou_before')} to {v('v1_val_mask_iou_after')}. On the 132 test patches with the automatic "
+    f"generator it fell from {v('v1_test_iou_untrained')} to {v('v1_test_iou_finetuned')} (paired Δ = "
+    f"{v('v1_test_delta')}, 95 % bootstrap CI {v('v1_test_delta_ci')}; 128 of 132 patches worse), and masks per patch "
+    f"fell from {v('v1_masks_per_patch_before', nd=1)} to {v('v1_masks_per_patch_after', nd=1)}. The training prompt was not the "
+    "inference prompt, and a validation loss on the training prompt could not detect it.",
+    f"**The grid misses most parcels (Fig. 1).** A 16 × 16 grid places a point every 22.9 px, so only "
+    f"{v('grid_hit_pps16', pct=True)} of parcels receive any point (ES {v('grid_hit_pps16_es', pct=True)}, "
+    f"FR {v('grid_hit_pps16_fr', pct=True)}; parcels of 20–49 px: {v('grid_hit_pps16_small_20_49px', pct=True)}). "
+    f"Per-patch IoU correlates with median parcel area (Spearman ρ = {v('spearman_iou_vs_median_parcel_area', nd=2)}, "
+    "confounded with country). No decoder can segment a parcel that receives no prompt: this is the cost of the prompt.",
+    f"**Paying the cost (Table 1).** On the frozen model, denser grids give mean best IoU {v('pps16_test_iou')} / "
+    f"{v('pps32_test_iou')} / {v('pps64_test_iou')} at 16 / 32 / 64 points per side. With both filters off it reaches "
+    f"{v('filters_off_test_iou')}. The best v2 run ({v('best_v2_run')}) reaches {v('best_v2_test_iou')} against "
+    f"{v('v1_test_iou_untrained')} untrained; the loss-selected v1 replicate reaches {v('v2_loss_select_test_iou')}.",
+]
+TABLE_CAPTION = ("**Table 1.** Grid density on the frozen model: point spacing on a 366 px patch, fraction of parcels "
+                 "with at least one grid point (all 888 patches), mean best IoU and seconds per patch (test subset).")
+TABLE = [["Points per side", "Spacing (px)", "Parcels hit", "Mean best IoU", "s / patch"]] + [
+    [str(k), f"{366 / k:.1f}", v(f"grid_hit_pps{k}", pct=True), v(f"pps{k}_test_iou"), v(f"pps{k}_sec_per_patch", nd=2)]
+    for k in (16, 32, 64)
+]
+FIGURE_CAPTION = ("**Fig. 1.** Fraction of parcels with at least one generator grid point, by parcel area, for 16, 32 "
+                  "and 64 points per side (888 patches).")
+CONCLUSIONS = [
+    "Prompt-free SAM 2.1 transfers poorly to Sentinel-2 parcels, and the dominant reason is the automatic prompt: at the "
+    "default density two thirds of the parcels, and almost all small Spanish ones, never receive a point, while each "
+    "extra point costs a full decoder pass. Adapting the decoder attacks the wrong bottleneck, and doing so with a "
+    "prompt that differs from the inference prompt actively destroys the generator; model selection must use the "
+    "generator itself. **Limitations:** one seed; RGB only; one month; 22 test patches per tile; grid coverage counts a "
+    "point inside a parcel, not a correct mask; the ES/FR gap mixes parcel size with crop and radiometric shift.",
+]
+REFERENCES = [
+    "[1] N. Ravi et al., “SAM 2: Segment Anything in Images and Videos,” arXiv:2408.00714, 2024.",
+    "[2] A. Kirillov et al., “Segment Anything,” in Proc. IEEE/CVF ICCV, pp. 4015–4026, 2023.",
+    "[3] D. Sykas, M. Sdraka, D. Zografakis and I. Papoutsis, “A Sentinel-2 Multiyear, Multicountry Benchmark Dataset for "
+    "Crop Classification and Segmentation With Deep Learning,” IEEE J. Sel. Topics Appl. Earth Observ. Remote Sens., "
+    "vol. 15, pp. 2937–2953, 2022.",
+    "[4] M. Drusch et al., “Sentinel-2: ESA's Optical High-Resolution Mission for GMES Operational Services,” Remote Sens. "
+    "Environ., vol. 120, pp. 25–36, 2012.",
+    "[5] A. Hollstein, K. Segl, L. Guanter, M. Brell and M. Enesco, “Ready-to-Use Methods for the Detection of Clouds, "
+    "Cirrus, Snow, Shadow, Water and Clear Sky Pixels in Sentinel-2 MSI Images,” Remote Sens., vol. 8, no. 8, p. 666, 2016.",
+    "[6] C. Ryali et al., “Hiera: A Hierarchical Vision Transformer without the Bells-and-Whistles,” in Proc. ICML, 2023.",
+]
+
+# -------------------------------------------------------------------------------------------------------------- HELPERS
+doc = Document(TEMPLATE)
+P = list(doc.paragraphs)
+
+
+def set_text(p, text, size=None):
+    """Replace the runs of paragraph p, keeping the first run's formatting; **bold** and *italic* spans are supported."""
+    base = copy.deepcopy(p.runs[0]._r) if p.runs else None
+    for r in p._p.findall(qn("w:r")):
+        p._p.remove(r)
+    for part in re.split(r"(\*\*.+?\*\*|\*[^*]+?\*)", text):
+        if not part:
+            continue
+        r = p.add_run(part.strip("*") if part.startswith("*") else part)
+        if base is not None:
+            rpr = base.find(qn("w:rPr"))
+            if rpr is not None:
+                rpr = copy.deepcopy(rpr)
+                for tag in ("w:b", "w:bCs", "w:i", "w:iCs"):   # bold/italic come only from the markup
+                    for e in rpr.findall(qn(tag)):
+                        rpr.remove(e)
+                r._r.insert(0, rpr)
+        if part.startswith("**"):
+            r.bold = True
+        elif part.startswith("*"):
+            r.italic = True
+        if size:
+            r.font.size = Pt(size)
+    return p
+
+
+def insert_after(p, text, size=None, like=None):
+    """New paragraph after p, formatted like `like` (default: p itself)."""
+    new = copy.deepcopy((like or p)._p)
+    p._p.addnext(new)
+    return set_text(Paragraph(new, p._parent), text, size)
+
+
+def remove(p):
+    p._p.getparent().remove(p._p)
+
+
+def fill(body_idx, lines, size=None):
+    """Write `lines` into the paragraphs P[body_idx[0]] (template) and following; delete the other old body paragraphs."""
+    first = P[body_idx[0]]
+    for i in body_idx[1:]:
+        remove(P[i])
+    last = set_text(first, lines[0], size)
+    for line in lines[1:]:
+        last = insert_after(last, line, size)
+    return last
+
+
+# --------------------------------------------------------------------------------------------------------------- BUILD
+# Group draft layout: 1 title | 3-7 authors, affiliations, e-mails (kept) | 9 INTRO | 10-11 | 12 METHOD | 13-15 |
+# 16-19 empty | 20 "3. PRELIMINARY FINDINGS" | 21-22 | 23 CONCLUSIONS | 24 empty | 25 | 26 empty | 27 REFERENCES |
+# 28 empty | 29-35 references [1]-[7] | 36 empty
+assert P[20].text.startswith("3. PRELIMINARY") and P[27].text.startswith("REFERENCES"), "group draft layout changed"
+set_text(P[1], f"**{TITLE}**")
+fill([10, 11], INTRO)
+fill([13, 14, 15], METHOD)
+for i in (16, 17, 18, 19, 24, 28):
+    remove(P[i])
+set_text(P[20], "**3. RESULTS**")
+fill([21, 22], RESULTS)
+fill([25], CONCLUSIONS)
+fill(list(range(29, 36)), REFERENCES, size=9)
+for p in doc.paragraphs:
+    if re.match(r"^\[\d\] ", p.text):
+        p.paragraph_format.space_after = Pt(1)
+while not doc.paragraphs[-1].text.strip():
+    remove(doc.paragraphs[-1])
+
+# Table 1 after the "Paying the cost" paragraph (caption above the table)
+paying = next(p for p in doc.paragraphs if p.text.startswith("Paying the cost"))
+cap = insert_after(paying, TABLE_CAPTION, size=8.5)
+cap.paragraph_format.space_after = Pt(2)
+cap.paragraph_format.keep_with_next = True
+tbl = doc.add_table(rows=len(TABLE), cols=len(TABLE[0]))
+tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
+tbl.autofit = False
+widths = [Cm(2.8), Cm(2.4), Cm(2.4), Cm(2.8), Cm(2.4)]
+for i, row in enumerate(TABLE):
+    for j, val in enumerate(row):
+        c = tbl.cell(i, j)
+        c.width = widths[j]
+        p = c.paragraphs[0]
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p.paragraph_format.space_after = Pt(0)
+        run = p.add_run(val)
+        run.font.size = Pt(8)
+        run.font.name = "Aptos"
+        run.bold = i == 0
+tblPr = tbl._tbl.tblPr
+borders = tblPr.makeelement(qn("w:tblBorders"), {})
+for edge in ("top", "bottom", "insideH"):
+    borders.append(borders.makeelement(qn(f"w:{edge}"), {qn("w:val"): "single", qn("w:sz"): "4", qn("w:color"): "808080"}))
+anchor = next((tblPr.find(qn(t)) for t in ("w:shd", "w:tblLayout", "w:tblCellMar", "w:tblLook")
+               if tblPr.find(qn(t)) is not None), None)
+anchor.addprevious(borders) if anchor is not None else tblPr.append(borders)
+cap._p.addnext(tbl._tbl)
+spacer = copy.deepcopy(cap._p)
+tbl._tbl.addnext(spacer)
+sp = Paragraph(spacer, cap._parent)
+for r_ in sp._p.findall(qn("w:r")):
+    sp._p.remove(r_)
+sp.paragraph_format.space_after = Pt(0)
+for i, row in enumerate(tbl.rows):
+    trPr = row._tr.get_or_add_trPr()
+    trPr.append(trPr.makeelement(qn("w:cantSplit"), {}))
+    if i < len(tbl.rows) - 1:
+        for c in row.cells:
+            c.paragraphs[0].paragraph_format.keep_with_next = True
+
+# Fig. 1 after "The grid misses most parcels"
+grid = next(p for p in doc.paragraphs if p.text.startswith("The grid misses"))
+figp = insert_after(grid, "")
+figp.alignment = WD_ALIGN_PARAGRAPH.CENTER
+figp.paragraph_format.space_after = Pt(0)
+figp.paragraph_format.keep_with_next = True
+figp.add_run().add_picture(str(FIGURE), width=Cm(7.5))
+fcap = insert_after(figp, FIGURE_CAPTION, size=8.5, like=grid)
+fcap.alignment = WD_ALIGN_PARAGRAPH.CENTER
+fcap.paragraph_format.space_after = Pt(6)
+
+# Tighter body spacing than the group draft (line 1.43, 11 pt before/after) so the text fits the 2-page limit.
+for p in doc.paragraphs:
+    pf = p.paragraph_format
+    if pf.line_spacing and pf.line_spacing > 1.2:
+        pf.line_spacing = 1.15
+        pf.space_before = Pt(0)
+        pf.space_after = Pt(4)
+    pf.widow_control = True
+    pf.keep_together = bool(re.match(r"^\[\d+\] ", p.text))
+    if re.match(r"^(\d\. [A-Z]|REFERENCES)", p.text):
+        pf.keep_with_next = True
+
+doc.core_properties.title = TITLE
+doc.core_properties.author = "Johanna Zagon, Andre Rubio, Pierre Lavergne"
+doc.core_properties.subject = "WAIMLAp 2026 extended abstract"
+
+doc.save(OUT)
+print("saved", OUT)
+print("pending keys:", ", ".join(PENDING) if PENDING else "none")
