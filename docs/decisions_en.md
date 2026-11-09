@@ -132,6 +132,15 @@ are filled in later, without editing the prediction.
      operating point, a smaller step only slows the shift.
    - Result:
 
+10. **Bug-vs-finding diagnostics, added 2026-11-08 22:37 UTC-5 before results.**
+   (a) E_grid_multi selected by val loss (keeps trained weights) and evaluated with filters off;
+   (b) E_grid_multi with --iou-weight 0 (IoU head untouched, Dice only).
+   - Prediction: with filters off, trained masks are about as good as untrained (|Δ| < 0.01), so
+     the filtered drop comes from the IoU head + fixed pred_iou_thresh; (b) loses less than E.
+   - Reason: training calibrates the IoU head to true parcel IoU (lower than SAM's optimistic
+     scores), so more masks fall under the fixed 0.5 threshold.
+   - Result:
+
 What each result would refute: if D does not beat A, prompt/token alignment is not the factor;
 if the grid sweep beats every trained run, the bottleneck is prompt density, not the decoder.
 

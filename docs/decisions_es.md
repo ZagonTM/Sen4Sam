@@ -293,6 +293,16 @@ val (salvo `A_loss_select`). Las líneas "Resultado:" se llenan después, sin ed
      operación del generador, un paso menor solo ralentiza el desplazamiento.
    - Resultado:
 
+10. **Diagnóstico error-de-código vs hallazgo, añadido 2026-11-08 22:37 UTC-5 antes de resultados.**
+   (a) E_grid_multi seleccionada por pérdida de val (conserva pesos entrenados) y evaluada sin filtros;
+   (b) E_grid_multi con --iou-weight 0 (cabeza IoU sin tocar, solo Dice).
+   - Predicción: sin filtros, las máscaras entrenadas son casi tan buenas como las sin entrenar
+     (|Δ| < 0.01), así que la caída con filtros viene de la cabeza IoU + el umbral fijo
+     pred_iou_thresh; (b) pierde menos que E.
+   - Razón: el entrenamiento calibra la cabeza IoU al IoU real de la parcela (más bajo que las
+     puntuaciones optimistas de SAM), y más máscaras quedan bajo el umbral fijo 0.5.
+   - Resultado:
+
 Hipótesis que cada resultado refuta: si D no supera a A, la alineación de prompt/token no es
 el factor; si el barrido de rejilla supera a todas las corridas entrenadas, el cuello de
 botella es la densidad del prompt y no el decodificador.
