@@ -33,6 +33,12 @@ Keep download/preprocessing defaults: seeds are fixed so every run yields the sa
 - `src/download_process_data/`: `data_helpers.py` is the shared library; `download_s4a.py` and `preprocessing.py` are the two pipeline steps; `analyze_*.py` only regenerate the CSVs behind notebook 00.
 - Per-patch data in `data/processed/`: `<patch>_rgb.png` (366×366 uint8, May, B04/B03/B02 stretched), `<patch>_parcels.npy` (instance ids, 0 = background), `<patch>_labels.npy`. `data/manifest.csv` column `kept==1` selects the 888 patches (148 per tile × 6 tiles).
 
+## Repository layout
+
+- `results/`: `split.csv` (input, root), `baseline/` (eval_patches/eval_summary/eval_baseline.log/explanation.md), `v1_nb07/` (notebook-07 outputs), `phase_c/` (from `analysis/phase_c.py`), `v2/` (pod experiment outputs).
+- `submission/abstract/` and `submission/poster/`: `draft.md` + `build_*.py` (rebuild with `uv run --with python-docx --with pillow python submission/abstract/build_abstract.py` and `uv run --with python-pptx --with qrcode --with pillow python submission/poster/build_poster.py`).
+- `course/` (gitignored): assignment PDF, `templates/` for WAIMLAp templates. `docs/handoff.md`: project handoff.
+
 ## Notebooks
 
 - `00`, `01` exist in `_en` and `_es`; `02`–`06` are Spanish-only and run on **Colab** (clone repo, mount Drive at `/content/drive/MyDrive/Sen4SAM`, unzip `processed.zip`). They are not runnable locally as-is; loaders (`load_rgb`, `load_parcels`) are duplicated per notebook.

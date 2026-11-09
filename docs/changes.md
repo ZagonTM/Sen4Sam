@@ -80,10 +80,10 @@ The `val` set is created but **not used yet**. `03` and `04` still pick their si
 
 New cells between the model/optimizer cell and the training loop (cells 9–11):
 
-- `evaluate_model_on_patches(model, patches_df)`: runs the automatic mask generator (`points_per_side=16`, `pred_iou_thresh=0.5`, `stability_score_thresh=0.8`, the same settings as `results/eval_patches.csv`) and `evaluate_masks.evaluate_patch` on each patch. Returns a dataframe with the same columns as the baseline CSV.
+- `evaluate_model_on_patches(model, patches_df)`: runs the automatic mask generator (`points_per_side=16`, `pred_iou_thresh=0.5`, `stability_score_thresh=0.8`, the same settings as `results/baseline/eval_patches.csv`) and `evaluate_masks.evaluate_patch` on each patch. Returns a dataframe with the same columns as the baseline CSV.
 - `summarize_eval(df, title)`: prints mean best IoU, median best IoU, fraction of fields with IoU > 0.5, mask-on-field fraction and mask count, overall and by country.
 - The untrained model is evaluated on all `test` patches. The result is stored in `baseline_test` and saved to Drive as `eval_test_untrained.csv`.
-- A control cell compares `mean_best_iou` of these patches with `results/eval_patches.csv`. The difference should be about 0.
+- A control cell compares `mean_best_iou` of these patches with `results/baseline/eval_patches.csv`. The difference should be about 0.
 - `EVAL_LIMIT` (default `None`) evaluates only the first N test patches, for quick checks.
 
 The model is evaluated before the loop, so the weights are still the original ones. After training, the same function call on the same `test_patches` gives the comparison.

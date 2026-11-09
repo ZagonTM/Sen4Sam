@@ -22,11 +22,30 @@ src/
   evaluate_masks.py        baseline: SAM 2 masks vs parcels -> CSVs
   make_split.py            fixed train/val/test split by patch (seed 42, per tile) -> results/split.csv
   teardown.py              Phase A instrumentation (params, MACs, features, ERF, timing)
+analysis/    phase_c.py: domain-shift analysis -> results/phase_c/
+scripts/     pod setup and experiment runner (RunPod)
 notebooks/   narrative, experiments, plots — English and Spanish versions
              (00_{en,es}_data_availability, 01_{en,es}_base_model_teardown)
-docs/        data_{en,es}.md (data decisions) + decisions_{en,es}.md (full decision log)
+docs/        data_{en,es}.md, decisions_{en,es}.md (decision log), changes.md, handoff.md
+results/
+  split.csv                fixed split (input to training/eval)
+  baseline/                frozen-model baseline: eval_patches.csv, eval_summary.csv, eval_baseline.log, explanation.md
+  v1_nb07/                 notebook-07 (Colab) v1 fine-tuning outputs
+  phase_c/                 domain-shift tables and figures
+  v2/                      pod experiment outputs (v2 ablation)
+submission/
+  abstract/                draft.md + build_abstract.py
+  poster/                  draft.md + build_poster.py
+course/      assignment PDF + templates/ (gitignored; put WAIMLAp templates in course/templates/)
 checkpoints/ SAM 2 weights (not committed — download separately)
 data/        patches + derived CSVs/images (not committed — produced by the scripts)
+```
+
+Rebuild submission files (templates expected in `course/templates/`):
+
+```bash
+uv run --with python-docx --with pillow python submission/abstract/build_abstract.py
+uv run --with python-pptx --with qrcode --with pillow python submission/poster/build_poster.py
 ```
 
 ## Setup

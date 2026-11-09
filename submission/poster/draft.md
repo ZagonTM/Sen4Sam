@@ -22,7 +22,7 @@ Deep Learning 1INF52, PUCP. Authors: {{AUTHORS}}. Code: github.com/ZagonTM/Sen4S
 - Validation (centroid prompts): mask IoU 0.312 to 0.530.
 - Test (automatic generator): 0.156 to **0.064**; paired delta -0.092, CI [-0.103, -0.083]; masks per patch 78.7 to 41.1; 128/132 patches worse.
 - Message: training prompt is not the inference prompt; validation loss could not see it.
-- Suggested figures: `results/training_curves.png`, `results/test_comparison.png`, `results/phase_c/fig_paired_delta_hist.png`
+- Suggested figures: `results/v1_nb07/training_curves.png`, `results/v1_nb07/test_comparison.png`, `results/phase_c/fig_paired_delta_hist.png`
 
 ## Panel 5. Why: prompt density (Phase C)
 - Median parcel about 113 px (11x11); grid spacing at 16x16 is 22.9 px.

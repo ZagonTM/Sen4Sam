@@ -11,9 +11,9 @@ BLAB = ["20-49", "50-99", "100-199", "200-499", ">=500"]
 PPS = [16, 32, 64]
 rng = np.random.default_rng(0)
 
-base = pd.read_csv("results/eval_patches.csv")
-unt = pd.read_csv("results/eval_test_untrained.csv")
-fin = pd.read_csv("results/eval_test_finetuned.csv")
+base = pd.read_csv("results/baseline/eval_patches.csv")
+unt = pd.read_csv("results/v1_nb07/eval_test_untrained.csv")
+fin = pd.read_csv("results/v1_nb07/eval_test_finetuned.csv")
 man = pd.read_csv("data/manifest.csv"); man = man[man.kept == 1]
 split = pd.read_csv("results/split.csv")
 
