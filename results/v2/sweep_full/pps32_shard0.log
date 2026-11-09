@@ -1,0 +1,18 @@
+/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/torch/jit/_script.py:1485: FutureWarning: `torch.jit.script` is not supported in Python 3.14+ and may break. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+device cuda | points_per_side 32 (1024 decoder calls) | pred_iou 0.5 | stability 0.8 | bf16 autocast True | weights pre-trained | -> results/sweep_full/pps32_shard0/eval_patches.csv
+[10/33] 4.4 s/patch, ETA 1.7 min
+[20/33] 6.5 s/patch, ETA 1.4 min
+[30/33] 12.1 s/patch, ETA 0.6 min
+[33/33] 13.7 s/patch, ETA 0.0 min
+wrote results/sweep_full/pps32_shard0/eval_patches.csv (33 rows)
+wrote results/sweep_full/pps32_shard0/eval_summary.csv (7 rows)
+
+per-tile summary:
+  31TBF: masks 100.8 | coverage 0.5174 | mean IoU 0.12 | fields@IoU>0.5 0.0949 | mask-on-field 0.5316
+  31TCG: masks 63.4 | coverage 0.8417 | mean IoU 0.1334 | fields@IoU>0.5 0.1266 | mask-on-field 0.528
+  31TCL: masks 289.2 | coverage 0.6475 | mean IoU 0.3909 | fields@IoU>0.5 0.3975 | mask-on-field 0.6109
+  31TDG: masks 55.8 | coverage 0.4171 | mean IoU 0.168 | fields@IoU>0.5 0.0958 | mask-on-field 0.094
+  31TDK: masks 246.5 | coverage 0.6873 | mean IoU 0.2819 | fields@IoU>0.5 0.2625 | mask-on-field 0.7066
+  31UCP: masks 167.6 | coverage 0.8095 | mean IoU 0.4146 | fields@IoU>0.5 0.4285 | mask-on-field 0.766
+  ALL: masks 159.2 | coverage 0.6502 | mean IoU 0.2526 | fields@IoU>0.5 0.2359 | mask-on-field 0.5465

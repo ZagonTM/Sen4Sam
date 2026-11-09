@@ -1,0 +1,4 @@
+[03:33:56 +0m] START PARALLEL=1 OMP_NUM_THREADS=3 EPOCHS=6 PATIENCE=2 TRAIN_PATCHES=150 SWEEP_LIMIT=40 EVAL_LIMIT=0
+[03:33:56 +0m] START E_grid_multi
+[03:40:30 +6m] FAIL(rc=1) E_grid_multi (6m34s) log=results/E_loss/logs/E_grid_multi.log
+[03:40:30 +6m] ALL DONE (6 min). Summaries:

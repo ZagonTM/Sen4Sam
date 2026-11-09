@@ -1,0 +1,4 @@
+/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/torch/jit/_script.py:1485: FutureWarning: `torch.jit.script` is not supported in Python 3.14+ and may break. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+device cuda | points_per_side 64 (4096 decoder calls) | pred_iou 0.5 | stability 0.8 | bf16 autocast True | weights pre-trained | -> results/sweep_full/pps64_shard0/eval_patches.csv
+[10/33] 26.6 s/patch, ETA 10.2 min

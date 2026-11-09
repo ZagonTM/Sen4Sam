@@ -1,0 +1,74 @@
+=== train E_grid_multi: --prompt grid --tokens multi --select-by generator --epochs 6 --patience 2 --train-patches 150 --parcels-per-patch 30 --val-patches 20 --gen-val-patches 12 --iou-weight 0
+train: 3762 parcels / 150 patches | val: 762 parcels / 20 patches | generator val: 12 patches
+/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/torch/jit/_script.py:1485: FutureWarning: `torch.jit.script` is not supported in Python 3.14+ and may break. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+trainable parameters: 1,712,132 (3.72% of 46,060,354)
+device cuda:0 | bf16 autocast (encoder/generator) True
+epoch 0 (untrained): val_loss=0.4174 val_mask_iou=0.5005 gen_iou=0.1212
+epoch 1: train_loss=0.3229 val_loss=0.3094 val_mask_iou=0.5726 gen_iou=0.2032 | 228s <- best
+epoch 2: train_loss=0.2994 val_loss=0.3157 val_mask_iou=0.5653 gen_iou=0.2092 | 148s <- best
+epoch 3: train_loss=0.2909 val_loss=0.3081 val_mask_iou=0.5729 gen_iou=0.2089 | 111s
+epoch 4: train_loss=0.2814 val_loss=0.3102 val_mask_iou=0.5718 gen_iou=0.2184 | 155s <- best
+epoch 5: train_loss=0.2711 val_loss=0.3177 val_mask_iou=0.5642 gen_iou=0.2132 | 95s
+epoch 6: train_loss=0.2660 val_loss=0.3137 val_mask_iou=0.5704 gen_iou=0.2312 | 87s <- best
+done. best epoch 6; weights: results/E_noiou/runs/E_grid_multi/best_trainable.pt
+=== eval test: --weights results/E_noiou/runs/E_grid_multi/best_trainable.pt
+loaded trained weights: results/E_noiou/runs/E_grid_multi/best_trainable.pt
+/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/torch/jit/_script.py:1485: FutureWarning: `torch.jit.script` is not supported in Python 3.14+ and may break. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+device cuda | points_per_side 16 (256 decoder calls) | pred_iou 0.5 | stability 0.8 | bf16 autocast True | weights results/E_noiou/runs/E_grid_multi/best_trainable.pt | -> results/E_noiou/runs/E_grid_multi/test_patches.csv
+[10/132] 1.9 s/patch, ETA 4.0 min
+[20/132] 1.9 s/patch, ETA 3.6 min
+[30/132] 1.8 s/patch, ETA 3.1 min
+[40/132] 1.8 s/patch, ETA 2.7 min
+[50/132] 1.8 s/patch, ETA 2.4 min
+[60/132] 1.7 s/patch, ETA 2.1 min
+[70/132] 1.7 s/patch, ETA 1.8 min
+[80/132] 1.8 s/patch, ETA 1.6 min
+[90/132] 1.9 s/patch, ETA 1.3 min
+[100/132] 1.9 s/patch, ETA 1.0 min
+[110/132] 1.9 s/patch, ETA 0.7 min
+[120/132] 2.0 s/patch, ETA 0.4 min
+[130/132] 1.9 s/patch, ETA 0.1 min
+[132/132] 1.9 s/patch, ETA 0.0 min
+wrote results/E_noiou/runs/E_grid_multi/test_patches.csv (132 rows)
+wrote results/E_noiou/runs/E_grid_multi/test_summary.csv (7 rows)
+
+per-tile summary:
+  31TBF: masks 255.9 | coverage 0.4804 | mean IoU 0.1873 | fields@IoU>0.5 0.1324 | mask-on-field 0.4319
+  31TCG: masks 245.6 | coverage 0.4777 | mean IoU 0.1515 | fields@IoU>0.5 0.1134 | mask-on-field 0.3078
+  31TCL: masks 338.0 | coverage 0.653 | mean IoU 0.3011 | fields@IoU>0.5 0.2795 | mask-on-field 0.5186
+  31TDG: masks 247.2 | coverage 0.5495 | mean IoU 0.1488 | fields@IoU>0.5 0.1215 | mask-on-field 0.1875
+  31TDK: masks 325.2 | coverage 0.6351 | mean IoU 0.2548 | fields@IoU>0.5 0.2155 | mask-on-field 0.6531
+  31UCP: masks 253.9 | coverage 0.7898 | mean IoU 0.4063 | fields@IoU>0.5 0.435 | mask-on-field 0.7276
+  ALL: masks 277.6 | coverage 0.5976 | mean IoU 0.2416 | fields@IoU>0.5 0.2162 | mask-on-field 0.4711
+=== eval test_nofilter: --weights results/E_noiou/runs/E_grid_multi/best_trainable.pt --pred-iou 0 --stability 0
+loaded trained weights: results/E_noiou/runs/E_grid_multi/best_trainable.pt
+/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/torch/jit/_script.py:1485: FutureWarning: `torch.jit.script` is not supported in Python 3.14+ and may break. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+device cuda | points_per_side 16 (256 decoder calls) | pred_iou 0.0 | stability 0.0 | bf16 autocast True | weights results/E_noiou/runs/E_grid_multi/best_trainable.pt | -> results/E_noiou/runs/E_grid_multi/test_nofilter_patches.csv
+[10/132] 4.1 s/patch, ETA 8.2 min
+[20/132] 4.0 s/patch, ETA 7.5 min
+[30/132] 4.1 s/patch, ETA 7.0 min
+[40/132] 4.1 s/patch, ETA 6.3 min
+[50/132] 4.1 s/patch, ETA 5.6 min
+[60/132] 4.1 s/patch, ETA 4.9 min
+[70/132] 3.8 s/patch, ETA 3.9 min
+[80/132] 3.5 s/patch, ETA 3.0 min
+[90/132] 3.3 s/patch, ETA 2.3 min
+[100/132] 3.1 s/patch, ETA 1.6 min
+[110/132] 2.9 s/patch, ETA 1.1 min
+[120/132] 2.8 s/patch, ETA 0.6 min
+[130/132] 2.6 s/patch, ETA 0.1 min
+[132/132] 2.6 s/patch, ETA 0.0 min
+wrote results/E_noiou/runs/E_grid_multi/test_nofilter_patches.csv (132 rows)
+wrote results/E_noiou/runs/E_grid_multi/test_nofilter_summary.csv (7 rows)
+
+per-tile summary:
+  31TBF: masks 635.5 | coverage 0.8153 | mean IoU 0.2662 | fields@IoU>0.5 0.1861 | mask-on-field 0.3792
+  31TCG: masks 655.1 | coverage 0.8142 | mean IoU 0.2147 | fields@IoU>0.5 0.1487 | mask-on-field 0.2447
+  31TCL: masks 599.8 | coverage 0.8528 | mean IoU 0.363 | fields@IoU>0.5 0.3343 | mask-on-field 0.478
+  31TDG: masks 615.4 | coverage 0.8292 | mean IoU 0.2169 | fields@IoU>0.5 0.1487 | mask-on-field 0.1626
+  31TDK: masks 597.4 | coverage 0.8485 | mean IoU 0.3139 | fields@IoU>0.5 0.26 | mask-on-field 0.6072
+  31UCP: masks 433.9 | coverage 0.9036 | mean IoU 0.4527 | fields@IoU>0.5 0.4824 | mask-on-field 0.6777
+  ALL: masks 589.5 | coverage 0.8439 | mean IoU 0.3046 | fields@IoU>0.5 0.26 | mask-on-field 0.4249

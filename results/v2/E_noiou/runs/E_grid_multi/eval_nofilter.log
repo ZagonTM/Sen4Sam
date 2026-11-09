@@ -1,0 +1,30 @@
+=== eval test_nofilter: --weights results/E_noiou/runs/E_grid_multi/best_trainable.pt --pred-iou 0 --stability 0
+loaded trained weights: results/E_noiou/runs/E_grid_multi/best_trainable.pt
+/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/torch/jit/_script.py:1485: FutureWarning: `torch.jit.script` is not supported in Python 3.14+ and may break. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+device cuda | points_per_side 16 (256 decoder calls) | pred_iou 0.0 | stability 0.0 | bf16 autocast True | weights results/E_noiou/runs/E_grid_multi/best_trainable.pt | -> results/E_noiou/runs/E_grid_multi/test_nofilter_patches.csv
+[10/132] 4.1 s/patch, ETA 8.2 min
+[20/132] 4.0 s/patch, ETA 7.5 min
+[30/132] 4.1 s/patch, ETA 7.0 min
+[40/132] 4.1 s/patch, ETA 6.3 min
+[50/132] 4.1 s/patch, ETA 5.6 min
+[60/132] 4.1 s/patch, ETA 4.9 min
+[70/132] 3.8 s/patch, ETA 3.9 min
+[80/132] 3.5 s/patch, ETA 3.0 min
+[90/132] 3.3 s/patch, ETA 2.3 min
+[100/132] 3.1 s/patch, ETA 1.6 min
+[110/132] 2.9 s/patch, ETA 1.1 min
+[120/132] 2.8 s/patch, ETA 0.6 min
+[130/132] 2.6 s/patch, ETA 0.1 min
+[132/132] 2.6 s/patch, ETA 0.0 min
+wrote results/E_noiou/runs/E_grid_multi/test_nofilter_patches.csv (132 rows)
+wrote results/E_noiou/runs/E_grid_multi/test_nofilter_summary.csv (7 rows)
+
+per-tile summary:
+  31TBF: masks 635.5 | coverage 0.8153 | mean IoU 0.2662 | fields@IoU>0.5 0.1861 | mask-on-field 0.3792
+  31TCG: masks 655.1 | coverage 0.8142 | mean IoU 0.2147 | fields@IoU>0.5 0.1487 | mask-on-field 0.2447
+  31TCL: masks 599.8 | coverage 0.8528 | mean IoU 0.363 | fields@IoU>0.5 0.3343 | mask-on-field 0.478
+  31TDG: masks 615.4 | coverage 0.8292 | mean IoU 0.2169 | fields@IoU>0.5 0.1487 | mask-on-field 0.1626
+  31TDK: masks 597.4 | coverage 0.8485 | mean IoU 0.3139 | fields@IoU>0.5 0.26 | mask-on-field 0.6072
+  31UCP: masks 433.9 | coverage 0.9036 | mean IoU 0.4527 | fields@IoU>0.5 0.4824 | mask-on-field 0.6777
+  ALL: masks 589.5 | coverage 0.8439 | mean IoU 0.3046 | fields@IoU>0.5 0.26 | mask-on-field 0.4249

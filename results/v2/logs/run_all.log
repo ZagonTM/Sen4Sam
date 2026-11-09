@@ -1,0 +1,36 @@
+[03:18:12 +0m] START PARALLEL=11 OMP_NUM_THREADS=3 EPOCHS=6 PATIENCE=2 TRAIN_PATCHES=150 SWEEP_LIMIT=40 EVAL_LIMIT=0
+[03:18:12 +0m] START base
+[03:18:14 +0m] START base_nofilter
+[03:18:16 +0m] START pps16
+[03:18:18 +0m] START pps32
+[03:18:20 +0m] START pps64
+[03:18:22 +0m] START A_centroid_tok0
+[03:18:24 +0m] START D_random_multi
+[03:18:26 +0m] START E_grid_multi
+[03:18:28 +0m] START B_centroid_multi
+[03:18:30 +0m] START C_random_tok0
+[03:18:32 +0m] START A_loss_select
+[03:19:02 +0m] OK pps16 (0m46s) log=results/logs/pps16.log
+[03:24:15 +6m] OK base (6m3s) log=results/logs/base.log
+[03:24:21 +6m] OK pps32 (6m3s) log=results/logs/pps32.log
+[03:30:19 +12m] OK pps64 (11m59s) log=results/logs/pps64.log
+[03:38:53 +20m] OK base_nofilter (20m39s) log=results/logs/base_nofilter.log
+[03:44:46 +26m] OK E_grid_multi (26m20s) log=results/logs/E_grid_multi.log
+[03:44:48 +26m] OK B_centroid_multi (26m20s) log=results/logs/B_centroid_multi.log
+[03:44:48 +26m] OK A_centroid_tok0 (26m26s) log=results/logs/A_centroid_tok0.log
+[03:45:09 +26m] OK C_random_tok0 (26m39s) log=results/logs/C_random_tok0.log
+[03:45:12 +27m] OK D_random_multi (26m48s) log=results/logs/D_random_multi.log
+[03:48:30 +30m] OK A_loss_select (29m58s) log=results/logs/A_loss_select.log
+[03:48:30 +30m] ALL DONE (30 min). Summaries:
+[03:19:02 +0m] OK pps16 (0m46s) log=results/logs/pps16.log
+[03:24:15 +6m] OK base (6m3s) log=results/logs/base.log
+[03:24:21 +6m] OK pps32 (6m3s) log=results/logs/pps32.log
+[03:30:19 +12m] OK pps64 (11m59s) log=results/logs/pps64.log
+[03:38:53 +20m] OK base_nofilter (20m39s) log=results/logs/base_nofilter.log
+[03:44:46 +26m] OK E_grid_multi (26m20s) log=results/logs/E_grid_multi.log
+[03:44:48 +26m] OK B_centroid_multi (26m20s) log=results/logs/B_centroid_multi.log
+[03:44:48 +26m] OK A_centroid_tok0 (26m26s) log=results/logs/A_centroid_tok0.log
+[03:45:09 +26m] OK C_random_tok0 (26m39s) log=results/logs/C_random_tok0.log
+[03:45:12 +27m] OK D_random_multi (26m48s) log=results/logs/D_random_multi.log
+[03:48:30 +30m] OK A_loss_select (29m58s) log=results/logs/A_loss_select.log
+[03:48:30 +30m] ALL DONE (30 min). Summaries:

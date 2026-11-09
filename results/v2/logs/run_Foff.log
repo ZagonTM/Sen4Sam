@@ -1,0 +1,6 @@
+[03:43:29 +0m] START PARALLEL=1 OMP_NUM_THREADS=256 EPOCHS=6 PATIENCE=2 TRAIN_PATCHES=150 SWEEP_LIMIT=40 EVAL_LIMIT=0
+[03:43:29 +0m] START E_grid_multi
+[03:55:06 +11m] OK E_grid_multi (11m37s) log=results/F_fixed_iouoff/logs/E_grid_multi.log
+[03:55:06 +11m] ALL DONE (11 min). Summaries:
+[03:55:06 +11m] OK E_grid_multi (11m37s) log=results/F_fixed_iouoff/logs/E_grid_multi.log
+[03:55:06 +11m] ALL DONE (11 min). Summaries:

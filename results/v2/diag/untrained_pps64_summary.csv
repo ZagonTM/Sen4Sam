@@ -1,0 +1,4 @@
+tile,patches,mean_n_masks,mean_coverage,mean_best_iou,mean_frac_iou_gt_0.5,mean_mask_on_field,mean_gen_seconds
+31TBF,22,146.3,0.7357,0.1637,0.1352,0.483,24.699
+31TDG,18,196.2,0.7613,0.2104,0.1848,0.2832,9.182
+ALL,40,168.8,0.7472,0.1847,0.1575,0.3931,17.716

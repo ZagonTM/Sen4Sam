@@ -1,0 +1,228 @@
+=== train E_grid_multi: --prompt grid --tokens multi --select-by generator --epochs 6 --patience 2 --train-patches 150 --parcels-per-patch 30 --val-patches 20 --gen-val-patches 12 --select-by loss
+train: 3762 parcels / 150 patches | val: 762 parcels / 20 patches | generator val: 12 patches
+/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/torch/jit/_script.py:1485: FutureWarning: `torch.jit.script` is not supported in Python 3.14+ and may break. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+trainable parameters: 1,712,132 (3.72% of 46,060,354)
+device cuda:0 | bf16 autocast (encoder/generator) True
+epoch 0 (untrained): val_loss=0.4960 val_mask_iou=0.5005 gen_iou=nan
+epoch 1: train_loss=0.3681 val_loss=0.3587 val_mask_iou=0.5707 gen_iou=nan | 140s <- best
+epoch 2: train_loss=0.3401 val_loss=0.3605 val_mask_iou=0.5649 gen_iou=nan | 128s
+epoch 3: train_loss=0.3257 val_loss=0.3634 val_mask_iou=0.5621 gen_iou=nan | 92s
+early stopping after 2 epochs without improvement; best epoch 1
+done. best epoch 1; weights: results/E_loss/runs/E_grid_multi/best_trainable.pt
+=== eval test: --weights results/E_loss/runs/E_grid_multi/best_trainable.pt
+loaded trained weights: results/E_loss/runs/E_grid_multi/best_trainable.pt
+/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/torch/jit/_script.py:1485: FutureWarning: `torch.jit.script` is not supported in Python 3.14+ and may break. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+device cuda | points_per_side 16 (256 decoder calls) | pred_iou 0.5 | stability 0.8 | bf16 autocast True | weights results/E_loss/runs/E_grid_multi/best_trainable.pt | -> results/E_loss/runs/E_grid_multi/test_patches.csv
+[W1109 03:40:29.224076878 CUDACachingAllocator.cpp:3934] memory allocation failed with OOM on device 0 while trying to allocate 268435456 bytes (free: 244187136, total: 101975851008).
+[W1109 03:40:29.241272598 CUDACachingAllocator.cpp:3934] memory allocation failed with OOM on device 0 while trying to allocate 268435456 bytes (free: 265158656, total: 101975851008).
+[W1109 03:40:29.241584511 CUDACachingAllocator.cpp:3934] memory allocation failed with OOM on device 0 while trying to allocate 268435456 bytes (free: 265158656, total: 101975851008).
+Traceback (most recent call last):
+  File "/workspace/Sen4Sam/src/evaluate_masks.py", line 242, in <module>
+    main()
+    ~~~~^^
+  File "/workspace/Sen4Sam/src/evaluate_masks.py", line 221, in main
+    metrics = evaluate_patch(image, parcels, generator, amp=not args.fp32)
+  File "/workspace/Sen4Sam/src/evaluate_masks.py", line 94, in evaluate_patch
+    records = generator.generate(image)
+  File "/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+    return func(*args, **kwargs)
+  File "/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/sam2/automatic_mask_generator.py", line 196, in generate
+    mask_data = self._generate_masks(image)
+  File "/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/sam2/automatic_mask_generator.py", line 233, in _generate_masks
+    crop_data = self._process_crop(image, crop_box, layer_idx, orig_size)
+  File "/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/sam2/automatic_mask_generator.py", line 271, in _process_crop
+    batch_data = self._process_batch(
+        points, cropped_im_size, crop_box, orig_size, normalize=True
+    )
+  File "/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/sam2/automatic_mask_generator.py", line 314, in _process_batch
+    masks, iou_preds, low_res_masks = self.predictor._predict(
+                                      ~~~~~~~~~~~~~~~~~~~~~~~^
+        in_points[:, None, :],
+        ^^^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        return_logits=True,
+        ^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+    return func(*args, **kwargs)
+  File "/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/sam2/sam2_image_predictor.py", line 420, in _predict
+    low_res_masks, iou_predictions, _, _ = self.model.sam_mask_decoder(
+                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        image_embeddings=self._features["image_embed"][img_idx].unsqueeze(0),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+        high_res_features=high_res_features,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1783, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1794, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/sam2/modeling/sam/mask_decoder.py", line 136, in forward
+    masks, iou_pred, mask_tokens_out, object_score_logits = self.predict_masks(
+                                                            ~~~~~~~~~~~~~~~~~~^
+        image_embeddings=image_embeddings,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+        high_res_features=high_res_features,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/sam2/modeling/sam/mask_decoder.py", line 213, in predict_masks
+    hs, src = self.transformer(src, pos_src, tokens)
+              ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1783, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1794, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/sam2/modeling/sam/transformer.py", line 95, in forward
+    queries, keys = layer(
+                    ~~~~~^
+        queries=queries,
+        ^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        key_pe=image_pe,
+        ^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1783, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1794, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/sam2/modeling/sam/transformer.py", line 185, in forward
+    keys = self.norm4(keys)
+  File "/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1783, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1794, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/torch/nn/modules/normalization.py", line 228, in forward
+    return F.layer_norm(
+           ~~~~~~~~~~~~^
+        input, self.normalized_shape, self.weight, self.bias, self.eps
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/torch/nn/functional.py", line 2993, in layer_norm
+    return torch.layer_norm(
+           ~~~~~~~~~~~~~~~~^
+        input, normalized_shape, weight, bias, eps, torch.backends.cudnn.enabled
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 256.00 MiB. GPU 0 has a total capacity of 94.97 GiB of which 252.88 MiB is free. Process 2006 has 3.05 GiB memory in use. Process 2013 has 3.05 GiB memory in use. Process 2022 has 3.05 GiB memory in use. Process 2057 has 3.05 GiB memory in use. Process 2076 has 3.05 GiB memory in use. Process 2331 has 3.05 GiB memory in use. Process 2496 has 14.10 GiB memory in use. Process 2495 has 10.42 GiB memory in use. Process 2497 has 10.15 GiB memory in use. Process 2498 has 6.65 GiB memory in use. Process 2746 has 5.70 GiB memory in use. Process 2929 has 3.05 GiB memory in use. Process 2930 has 3.05 GiB memory in use. Process 2937 has 3.05 GiB memory in use. Process 2936 has 3.05 GiB memory in use. Process 2948 has 3.05 GiB memory in use. Process 2947 has 3.05 GiB memory in use. Process 2956 has 3.05 GiB memory in use. Process 2957 has 3.05 GiB memory in use. Including non-PyTorch memory, this process has 2.66 GiB memory in use. Process 3005 has 2.16 GiB memory in use. Of the allocated memory 1.68 GiB is allocated by PyTorch, and 314.49 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+=== eval test_nofilter: --weights results/E_loss/runs/E_grid_multi/best_trainable.pt --pred-iou 0 --stability 0
+loaded trained weights: results/E_loss/runs/E_grid_multi/best_trainable.pt
+/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/torch/jit/_script.py:1485: FutureWarning: `torch.jit.script` is not supported in Python 3.14+ and may break. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+device cuda | points_per_side 16 (256 decoder calls) | pred_iou 0.0 | stability 0.0 | bf16 autocast True | weights results/E_loss/runs/E_grid_multi/best_trainable.pt | -> results/E_loss/runs/E_grid_multi/test_nofilter_patches.csv
+[W1109 03:40:29.230612325 CUDACachingAllocator.cpp:3934] memory allocation failed with OOM on device 0 while trying to allocate 268435456 bytes (free: 244187136, total: 101975851008).
+[W1109 03:40:29.240087412 CUDACachingAllocator.cpp:3934] memory allocation failed with OOM on device 0 while trying to allocate 268435456 bytes (free: 267255808, total: 101975851008).
+[W1109 03:40:29.240443795 CUDACachingAllocator.cpp:3934] memory allocation failed with OOM on device 0 while trying to allocate 268435456 bytes (free: 267255808, total: 101975851008).
+Traceback (most recent call last):
+  File "/workspace/Sen4Sam/src/evaluate_masks.py", line 242, in <module>
+    main()
+    ~~~~^^
+  File "/workspace/Sen4Sam/src/evaluate_masks.py", line 221, in main
+    metrics = evaluate_patch(image, parcels, generator, amp=not args.fp32)
+  File "/workspace/Sen4Sam/src/evaluate_masks.py", line 94, in evaluate_patch
+    records = generator.generate(image)
+  File "/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+    return func(*args, **kwargs)
+  File "/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/sam2/automatic_mask_generator.py", line 196, in generate
+    mask_data = self._generate_masks(image)
+  File "/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/sam2/automatic_mask_generator.py", line 233, in _generate_masks
+    crop_data = self._process_crop(image, crop_box, layer_idx, orig_size)
+  File "/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/sam2/automatic_mask_generator.py", line 271, in _process_crop
+    batch_data = self._process_batch(
+        points, cropped_im_size, crop_box, orig_size, normalize=True
+    )
+  File "/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/sam2/automatic_mask_generator.py", line 314, in _process_batch
+    masks, iou_preds, low_res_masks = self.predictor._predict(
+                                      ~~~~~~~~~~~~~~~~~~~~~~~^
+        in_points[:, None, :],
+        ^^^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        return_logits=True,
+        ^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+    return func(*args, **kwargs)
+  File "/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/sam2/sam2_image_predictor.py", line 420, in _predict
+    low_res_masks, iou_predictions, _, _ = self.model.sam_mask_decoder(
+                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        image_embeddings=self._features["image_embed"][img_idx].unsqueeze(0),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+        high_res_features=high_res_features,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1783, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1794, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/sam2/modeling/sam/mask_decoder.py", line 136, in forward
+    masks, iou_pred, mask_tokens_out, object_score_logits = self.predict_masks(
+                                                            ~~~~~~~~~~~~~~~~~~^
+        image_embeddings=image_embeddings,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+        high_res_features=high_res_features,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/sam2/modeling/sam/mask_decoder.py", line 213, in predict_masks
+    hs, src = self.transformer(src, pos_src, tokens)
+              ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1783, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1794, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/sam2/modeling/sam/transformer.py", line 95, in forward
+    queries, keys = layer(
+                    ~~~~~^
+        queries=queries,
+        ^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        key_pe=image_pe,
+        ^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1783, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1794, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/sam2/modeling/sam/transformer.py", line 185, in forward
+    keys = self.norm4(keys)
+  File "/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1783, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1794, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/torch/nn/modules/normalization.py", line 228, in forward
+    return F.layer_norm(
+           ~~~~~~~~~~~~^
+        input, self.normalized_shape, self.weight, self.bias, self.eps
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/torch/nn/functional.py", line 2993, in layer_norm
+    return torch.layer_norm(
+           ~~~~~~~~~~~~~~~~^
+        input, normalized_shape, weight, bias, eps, torch.backends.cudnn.enabled
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 256.00 MiB. GPU 0 has a total capacity of 94.97 GiB of which 254.88 MiB is free. Process 2006 has 3.05 GiB memory in use. Process 2013 has 3.05 GiB memory in use. Process 2022 has 3.05 GiB memory in use. Process 2057 has 3.05 GiB memory in use. Process 2076 has 3.05 GiB memory in use. Process 2331 has 3.05 GiB memory in use. Process 2496 has 14.10 GiB memory in use. Process 2495 has 10.42 GiB memory in use. Process 2497 has 10.15 GiB memory in use. Process 2498 has 6.65 GiB memory in use. Process 2746 has 5.70 GiB memory in use. Process 2929 has 3.05 GiB memory in use. Process 2930 has 3.05 GiB memory in use. Process 2937 has 3.05 GiB memory in use. Process 2936 has 3.05 GiB memory in use. Process 2948 has 3.05 GiB memory in use. Process 2947 has 3.05 GiB memory in use. Process 2956 has 3.05 GiB memory in use. Process 2957 has 3.05 GiB memory in use. Process 3006 has 2.66 GiB memory in use. Including non-PyTorch memory, this process has 2.16 GiB memory in use. Of the allocated memory 1.42 GiB is allocated by PyTorch, and 58.00 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)

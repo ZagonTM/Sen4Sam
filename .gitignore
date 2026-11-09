@@ -18,3 +18,6 @@ __pycache__/
 # Course materials (not committed)
 course/
 docs/handoff.md
+
+# Trained decoder weights (pod outputs; large)
+results/**/*.pt

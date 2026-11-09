@@ -1,0 +1,82 @@
+=== train E_grid_multi: --prompt grid --tokens multi --select-by generator --epochs 6 --patience 2 --train-patches 150 --parcels-per-patch 30 --val-patches 20 --gen-val-patches 12 --neg-frac 0.3 --eval-every 300 --lr 1e-5 --epochs 1 --patience 5 --iou-weight 0
+train: 1131 of the rows are background (negative) grid points
+train: 4893 parcels / 150 patches | val: 762 parcels / 20 patches | generator val: 12 patches
+/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/torch/jit/_script.py:1485: FutureWarning: `torch.jit.script` is not supported in Python 3.14+ and may break. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+trainable parameters: 1,712,132 (3.72% of 46,060,354)
+device cuda:0 | bf16 autocast (encoder/generator) True
+epoch 0 (untrained): val_loss=0.4174 val_mask_iou=0.5005 gen_iou=0.1212
+epoch 1 step 300: train_loss=0.3131 val_loss=0.3756 val_mask_iou=0.5286 gen_iou=0.1460 | 74s <- best
+epoch 1 step 600: train_loss=0.2862 val_loss=0.3587 val_mask_iou=0.5389 gen_iou=0.1609 | 102s <- best
+epoch 1 step 900: train_loss=0.2871 val_loss=0.3520 val_mask_iou=0.5415 gen_iou=0.1614 | 138s
+epoch 1 step 1200: train_loss=0.2590 val_loss=0.3495 val_mask_iou=0.5428 gen_iou=0.1615 | 168s
+epoch 1 step 1500: train_loss=0.2603 val_loss=0.3468 val_mask_iou=0.5435 gen_iou=0.1647 | 193s <- best
+epoch 1 step 1800: train_loss=0.2720 val_loss=0.3465 val_mask_iou=0.5409 gen_iou=0.1690 | 223s <- best
+epoch 1 step 2100: train_loss=0.2490 val_loss=0.3432 val_mask_iou=0.5452 gen_iou=0.1803 | 252s <- best
+epoch 1 step 2400: train_loss=0.2668 val_loss=0.3352 val_mask_iou=0.5580 gen_iou=0.1715 | 274s
+epoch 1 step 2700: train_loss=0.2493 val_loss=0.3294 val_mask_iou=0.5598 gen_iou=0.1733 | 296s
+epoch 1 step 3000: train_loss=0.2620 val_loss=0.3260 val_mask_iou=0.5604 gen_iou=0.1744 | 317s
+epoch 1 step 3300: train_loss=0.2346 val_loss=0.3246 val_mask_iou=0.5612 gen_iou=0.1792 | 337s
+epoch 1 step 3600: train_loss=0.2516 val_loss=0.3242 val_mask_iou=0.5601 gen_iou=0.1755 | 357s
+early stopping after 5 evaluations without improvement; best epoch 1 step 2100
+done. best epoch 1 step 2100; weights: results/F_fixed_iouoff/runs/E_grid_multi/best_trainable.pt
+=== eval test: --weights results/F_fixed_iouoff/runs/E_grid_multi/best_trainable.pt
+loaded trained weights: results/F_fixed_iouoff/runs/E_grid_multi/best_trainable.pt
+/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/torch/jit/_script.py:1485: FutureWarning: `torch.jit.script` is not supported in Python 3.14+ and may break. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+device cuda | points_per_side 16 (256 decoder calls) | pred_iou 0.5 | stability 0.8 | bf16 autocast True | weights results/F_fixed_iouoff/runs/E_grid_multi/best_trainable.pt | -> results/F_fixed_iouoff/runs/E_grid_multi/test_patches.csv
+[10/132] 1.0 s/patch, ETA 2.0 min
+[20/132] 1.0 s/patch, ETA 1.8 min
+[30/132] 0.9 s/patch, ETA 1.6 min
+[40/132] 1.0 s/patch, ETA 1.5 min
+[50/132] 1.0 s/patch, ETA 1.3 min
+[60/132] 0.9 s/patch, ETA 1.1 min
+[70/132] 1.0 s/patch, ETA 1.0 min
+[80/132] 1.0 s/patch, ETA 0.9 min
+[90/132] 1.1 s/patch, ETA 0.8 min
+[100/132] 1.2 s/patch, ETA 0.6 min
+[110/132] 1.2 s/patch, ETA 0.4 min
+[120/132] 1.2 s/patch, ETA 0.2 min
+[130/132] 1.3 s/patch, ETA 0.0 min
+[132/132] 1.3 s/patch, ETA 0.0 min
+wrote results/F_fixed_iouoff/runs/E_grid_multi/test_patches.csv (132 rows)
+wrote results/F_fixed_iouoff/runs/E_grid_multi/test_summary.csv (7 rows)
+
+per-tile summary:
+  31TBF: masks 124.1 | coverage 0.4528 | mean IoU 0.1574 | fields@IoU>0.5 0.1133 | mask-on-field 0.4748
+  31TCG: masks 106.0 | coverage 0.4187 | mean IoU 0.1182 | fields@IoU>0.5 0.0941 | mask-on-field 0.3886
+  31TCL: masks 223.6 | coverage 0.5276 | mean IoU 0.2739 | fields@IoU>0.5 0.2521 | mask-on-field 0.5569
+  31TDG: masks 119.0 | coverage 0.5037 | mean IoU 0.1203 | fields@IoU>0.5 0.0876 | mask-on-field 0.2117
+  31TDK: masks 211.7 | coverage 0.5094 | mean IoU 0.2253 | fields@IoU>0.5 0.1905 | mask-on-field 0.6921
+  31UCP: masks 175.8 | coverage 0.7551 | mean IoU 0.382 | fields@IoU>0.5 0.3936 | mask-on-field 0.7701
+  ALL: masks 160.0 | coverage 0.5279 | mean IoU 0.2129 | fields@IoU>0.5 0.1885 | mask-on-field 0.5157
+=== eval test_nofilter: --weights results/F_fixed_iouoff/runs/E_grid_multi/best_trainable.pt --pred-iou 0 --stability 0
+loaded trained weights: results/F_fixed_iouoff/runs/E_grid_multi/best_trainable.pt
+/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/torch/jit/_script.py:1485: FutureWarning: `torch.jit.script` is not supported in Python 3.14+ and may break. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+device cuda | points_per_side 16 (256 decoder calls) | pred_iou 0.0 | stability 0.0 | bf16 autocast True | weights results/F_fixed_iouoff/runs/E_grid_multi/best_trainable.pt | -> results/F_fixed_iouoff/runs/E_grid_multi/test_nofilter_patches.csv
+[10/132] 4.3 s/patch, ETA 8.7 min
+[20/132] 4.2 s/patch, ETA 7.9 min
+[30/132] 4.1 s/patch, ETA 6.9 min
+[40/132] 4.1 s/patch, ETA 6.2 min
+[50/132] 3.7 s/patch, ETA 5.0 min
+[60/132] 3.3 s/patch, ETA 3.9 min
+[70/132] 3.0 s/patch, ETA 3.1 min
+[80/132] 2.8 s/patch, ETA 2.4 min
+[90/132] 2.6 s/patch, ETA 1.8 min
+[100/132] 2.5 s/patch, ETA 1.3 min
+[110/132] 2.3 s/patch, ETA 0.8 min
+[120/132] 2.2 s/patch, ETA 0.4 min
+[130/132] 2.1 s/patch, ETA 0.1 min
+[132/132] 2.1 s/patch, ETA 0.0 min
+wrote results/F_fixed_iouoff/runs/E_grid_multi/test_nofilter_patches.csv (132 rows)
+wrote results/F_fixed_iouoff/runs/E_grid_multi/test_nofilter_summary.csv (7 rows)
+
+per-tile summary:
+  31TBF: masks 444.5 | coverage 0.9817 | mean IoU 0.2496 | fields@IoU>0.5 0.167 | mask-on-field 0.3818
+  31TCG: masks 445.0 | coverage 0.9844 | mean IoU 0.1999 | fields@IoU>0.5 0.1294 | mask-on-field 0.2594
+  31TCL: masks 524.5 | coverage 0.948 | mean IoU 0.3444 | fields@IoU>0.5 0.3081 | mask-on-field 0.49
+  31TDG: masks 448.3 | coverage 0.9824 | mean IoU 0.1927 | fields@IoU>0.5 0.1272 | mask-on-field 0.168
+  31TDK: masks 499.0 | coverage 0.9484 | mean IoU 0.2984 | fields@IoU>0.5 0.2431 | mask-on-field 0.618
+  31UCP: masks 411.3 | coverage 0.9781 | mean IoU 0.4391 | fields@IoU>0.5 0.4577 | mask-on-field 0.7042
+  ALL: masks 462.1 | coverage 0.9705 | mean IoU 0.2874 | fields@IoU>0.5 0.2387 | mask-on-field 0.4369

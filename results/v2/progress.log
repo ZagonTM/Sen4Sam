@@ -1,0 +1,165 @@
+[03:18:12 +0m] START PARALLEL=11 OMP_NUM_THREADS=3 EPOCHS=6 PATIENCE=2 TRAIN_PATCHES=150 SWEEP_LIMIT=40 EVAL_LIMIT=0
+[03:18:12 +0m] START base
+[03:18:14 +0m] START base_nofilter
+[03:18:16 +0m] START pps16
+[03:18:18 +0m] START pps32
+[03:18:20 +0m] START pps64
+[03:18:22 +0m] START A_centroid_tok0
+[03:18:24 +0m] START D_random_multi
+[03:18:26 +0m] START E_grid_multi
+[03:18:28 +0m] START B_centroid_multi
+[03:18:30 +0m] START C_random_tok0
+[03:18:32 +0m] START A_loss_select
+[03:19:02 +0m] OK pps16 (0m46s) log=results/logs/pps16.log
+[03:24:15 +6m] OK base (6m3s) log=results/logs/base.log
+[03:24:21 +6m] OK pps32 (6m3s) log=results/logs/pps32.log
+[03:30:19 +12m] OK pps64 (11m59s) log=results/logs/pps64.log
+[03:38:53 +20m] OK base_nofilter (20m39s) log=results/logs/base_nofilter.log
+[03:44:46 +26m] OK E_grid_multi (26m20s) log=results/logs/E_grid_multi.log
+[03:44:48 +26m] OK B_centroid_multi (26m20s) log=results/logs/B_centroid_multi.log
+[03:44:48 +26m] OK A_centroid_tok0 (26m26s) log=results/logs/A_centroid_tok0.log
+[03:45:09 +26m] OK C_random_tok0 (26m39s) log=results/logs/C_random_tok0.log
+[03:45:12 +27m] OK D_random_multi (26m48s) log=results/logs/D_random_multi.log
+[03:48:30 +30m] OK A_loss_select (29m58s) log=results/logs/A_loss_select.log
+[03:48:30 +30m] ALL DONE (30 min). Summaries:
+--- results/diag/untrained_nofilter_summary.csv
+tile,patches,mean_n_masks,mean_coverage,mean_best_iou,mean_frac_iou_gt_0.5,mean_mask_on_field,mean_gen_seconds
+31TBF,22,293.4,0.9932,0.2073,0.1325,0.4126,13.071
+31TCG,22,283.1,0.9946,0.1683,0.1078,0.3041,5.575
+31TCL,22,416.0,0.9817,0.332,0.2884,0.5296,3.572
+31TDG,22,284.7,0.9891,0.1727,0.1071,0.1907,9.619
+31TDK,22,382.0,0.9814,0.2783,0.2155,0.6542,3.662
+31UCP,22,316.0,0.9813,0.4154,0.417,0.7314,19.045
+ALL,132,329.2,0.9869,0.2624,0.2114,0.4704,9.091
+--- results/diag/untrained_pps16_summary.csv
+tile,patches,mean_n_masks,mean_coverage,mean_best_iou,mean_frac_iou_gt_0.5,mean_mask_on_field,mean_gen_seconds
+31TBF,22,40.6,0.6153,0.0802,0.0613,0.5334,0.441
+31TDG,18,52.3,0.651,0.0865,0.071,0.287,1.634
+ALL,40,45.9,0.6314,0.083,0.0657,0.4225,0.978
+--- results/diag/untrained_pps32_summary.csv
+tile,patches,mean_n_masks,mean_coverage,mean_best_iou,mean_frac_iou_gt_0.5,mean_mask_on_field,mean_gen_seconds
+31TBF,22,91.9,0.7054,0.132,0.1078,0.5061,7.234
+31TDG,18,122.0,0.7233,0.1635,0.1412,0.2944,10.855
+ALL,40,105.4,0.7134,0.1461,0.1228,0.4108,8.863
+--- results/diag/untrained_pps64_summary.csv
+tile,patches,mean_n_masks,mean_coverage,mean_best_iou,mean_frac_iou_gt_0.5,mean_mask_on_field,mean_gen_seconds
+31TBF,22,146.3,0.7357,0.1637,0.1352,0.483,24.699
+31TDG,18,196.2,0.7613,0.2104,0.1848,0.2832,9.182
+ALL,40,168.8,0.7472,0.1847,0.1575,0.3931,17.716
+--- results/diag/untrained_summary.csv
+tile,patches,mean_n_masks,mean_coverage,mean_best_iou,mean_frac_iou_gt_0.5,mean_mask_on_field,mean_gen_seconds
+31TBF,22,40.6,0.6153,0.0802,0.0613,0.5334,0.167
+31TCG,22,36.6,0.6608,0.0671,0.0571,0.4868,1.414
+31TCL,22,124.4,0.5026,0.2185,0.2029,0.6489,5.371
+31TDG,22,47.1,0.598,0.082,0.0674,0.2703,0.71
+31TDK,22,114.2,0.4697,0.1675,0.1456,0.7554,3.815
+31UCP,22,108.6,0.6709,0.3224,0.3235,0.8106,4.315
+ALL,132,78.6,0.5862,0.1563,0.143,0.5842,2.632
+--- results/runs/A_centroid_tok0/test_nofilter_summary.csv
+tile,patches,mean_n_masks,mean_coverage,mean_best_iou,mean_frac_iou_gt_0.5,mean_mask_on_field,mean_gen_seconds
+31TBF,22,293.4,0.9932,0.2073,0.1325,0.4126,8.82
+31TCG,22,283.1,0.9946,0.1683,0.1078,0.3041,3.245
+31TCL,22,416.0,0.9817,0.332,0.2884,0.5296,6.608
+31TDG,22,284.7,0.9891,0.1727,0.1071,0.1907,4.929
+31TDK,22,382.0,0.9814,0.2783,0.2155,0.6542,20.286
+31UCP,22,316.0,0.9813,0.4154,0.417,0.7314,10.691
+ALL,132,329.2,0.9869,0.2624,0.2114,0.4704,9.097
+--- results/runs/A_centroid_tok0/test_summary.csv
+tile,patches,mean_n_masks,mean_coverage,mean_best_iou,mean_frac_iou_gt_0.5,mean_mask_on_field,mean_gen_seconds
+31TBF,22,40.6,0.6153,0.0802,0.0613,0.5334,1.278
+31TCG,22,36.6,0.6608,0.0671,0.0571,0.4868,1.352
+31TCL,22,124.4,0.5026,0.2185,0.2029,0.6489,1.967
+31TDG,22,47.1,0.598,0.082,0.0674,0.2703,1.534
+31TDK,22,114.2,0.4697,0.1675,0.1456,0.7554,1.837
+31UCP,22,108.6,0.6709,0.3224,0.3235,0.8106,2.411
+ALL,132,78.6,0.5862,0.1563,0.143,0.5842,1.73
+--- results/runs/A_loss_select/test_nofilter_summary.csv
+tile,patches,mean_n_masks,mean_coverage,mean_best_iou,mean_frac_iou_gt_0.5,mean_mask_on_field,mean_gen_seconds
+31TBF,22,478.9,0.7855,0.2107,0.128,0.359,3.723
+31TCG,22,482.0,0.7581,0.1619,0.0924,0.2381,13.878
+31TCL,22,503.5,0.796,0.2982,0.2496,0.4676,15.883
+31TDG,22,471.0,0.84,0.1572,0.0942,0.1537,2.732
+31TDK,22,489.5,0.8148,0.2583,0.1957,0.6004,10.129
+31UCP,22,470.6,0.9347,0.4085,0.4121,0.7023,6.217
+ALL,132,482.6,0.8215,0.2491,0.1953,0.4202,8.76
+--- results/runs/A_loss_select/test_summary.csv
+tile,patches,mean_n_masks,mean_coverage,mean_best_iou,mean_frac_iou_gt_0.5,mean_mask_on_field,mean_gen_seconds
+31TBF,22,47.3,0.0905,0.0528,0.0367,0.4606,0.446
+31TCG,22,35.8,0.0499,0.0335,0.028,0.3623,0.369
+31TCL,22,77.0,0.1411,0.1077,0.0966,0.6107,0.622
+31TDG,22,46.5,0.0953,0.0484,0.04,0.2303,0.41
+31TDK,22,75.4,0.1372,0.0855,0.0759,0.7169,0.58
+31UCP,22,99.1,0.4085,0.2232,0.2189,0.836,0.597
+ALL,132,63.5,0.1538,0.0918,0.0827,0.5361,0.504
+--- results/runs/B_centroid_multi/test_nofilter_summary.csv
+tile,patches,mean_n_masks,mean_coverage,mean_best_iou,mean_frac_iou_gt_0.5,mean_mask_on_field,mean_gen_seconds
+31TBF,22,293.4,0.9932,0.2073,0.1325,0.4126,8.755
+31TCG,22,283.1,0.9946,0.1683,0.1078,0.3041,3.244
+31TCL,22,416.0,0.9817,0.332,0.2884,0.5296,6.609
+31TDG,22,284.7,0.9891,0.1727,0.1071,0.1907,4.688
+31TDK,22,382.0,0.9814,0.2783,0.2155,0.6542,20.288
+31UCP,22,316.0,0.9813,0.4154,0.417,0.7314,10.679
+ALL,132,329.2,0.9869,0.2624,0.2114,0.4704,9.044
+--- results/runs/B_centroid_multi/test_summary.csv
+tile,patches,mean_n_masks,mean_coverage,mean_best_iou,mean_frac_iou_gt_0.5,mean_mask_on_field,mean_gen_seconds
+31TBF,22,40.6,0.6153,0.0802,0.0613,0.5334,1.264
+31TCG,22,36.6,0.6608,0.0671,0.0571,0.4868,1.312
+31TCL,22,124.4,0.5026,0.2185,0.2029,0.6489,1.971
+31TDG,22,47.1,0.598,0.082,0.0674,0.2703,1.577
+31TDK,22,114.2,0.4697,0.1675,0.1456,0.7554,1.875
+31UCP,22,108.6,0.6709,0.3224,0.3235,0.8106,2.289
+ALL,132,78.6,0.5862,0.1563,0.143,0.5842,1.715
+--- results/runs/C_random_tok0/test_nofilter_summary.csv
+tile,patches,mean_n_masks,mean_coverage,mean_best_iou,mean_frac_iou_gt_0.5,mean_mask_on_field,mean_gen_seconds
+31TBF,22,293.4,0.9932,0.2073,0.1325,0.4126,8.79
+31TCG,22,283.1,0.9946,0.1683,0.1078,0.3041,3.246
+31TCL,22,416.0,0.9817,0.332,0.2884,0.5296,6.61
+31TDG,22,284.7,0.9891,0.1727,0.1071,0.1907,4.785
+31TDK,22,382.0,0.9814,0.2783,0.2155,0.6542,20.108
+31UCP,22,316.0,0.9813,0.4154,0.417,0.7314,11.103
+ALL,132,329.2,0.9869,0.2624,0.2114,0.4704,9.107
+--- results/runs/C_random_tok0/test_summary.csv
+tile,patches,mean_n_masks,mean_coverage,mean_best_iou,mean_frac_iou_gt_0.5,mean_mask_on_field,mean_gen_seconds
+31TBF,22,40.6,0.6153,0.0802,0.0613,0.5334,1.282
+31TCG,22,36.6,0.6608,0.0671,0.0571,0.4868,1.324
+31TCL,22,124.4,0.5026,0.2185,0.2029,0.6489,1.987
+31TDG,22,47.1,0.598,0.082,0.0674,0.2703,1.551
+31TDK,22,114.2,0.4697,0.1675,0.1456,0.7554,1.846
+31UCP,22,108.6,0.6709,0.3224,0.3235,0.8106,2.357
+ALL,132,78.6,0.5862,0.1563,0.143,0.5842,1.724
+--- results/runs/D_random_multi/test_nofilter_summary.csv
+tile,patches,mean_n_masks,mean_coverage,mean_best_iou,mean_frac_iou_gt_0.5,mean_mask_on_field,mean_gen_seconds
+31TBF,22,293.4,0.9932,0.2073,0.1325,0.4126,8.819
+31TCG,22,283.1,0.9946,0.1683,0.1078,0.3041,3.245
+31TCL,22,416.0,0.9817,0.332,0.2884,0.5296,6.611
+31TDG,22,284.7,0.9891,0.1727,0.1071,0.1907,4.912
+31TDK,22,382.0,0.9814,0.2783,0.2155,0.6542,20.101
+31UCP,22,316.0,0.9813,0.4154,0.417,0.7314,11.236
+ALL,132,329.2,0.9869,0.2624,0.2114,0.4704,9.154
+--- results/runs/D_random_multi/test_summary.csv
+tile,patches,mean_n_masks,mean_coverage,mean_best_iou,mean_frac_iou_gt_0.5,mean_mask_on_field,mean_gen_seconds
+31TBF,22,40.6,0.6153,0.0802,0.0613,0.5334,1.277
+31TCG,22,36.6,0.6608,0.0671,0.0571,0.4868,1.35
+31TCL,22,124.4,0.5026,0.2185,0.2029,0.6489,1.974
+31TDG,22,47.1,0.598,0.082,0.0674,0.2703,1.531
+31TDK,22,114.2,0.4697,0.1675,0.1456,0.7554,1.825
+31UCP,22,108.6,0.6709,0.3224,0.3235,0.8106,2.416
+ALL,132,78.6,0.5862,0.1563,0.143,0.5842,1.729
+--- results/runs/E_grid_multi/test_nofilter_summary.csv
+tile,patches,mean_n_masks,mean_coverage,mean_best_iou,mean_frac_iou_gt_0.5,mean_mask_on_field,mean_gen_seconds
+31TBF,22,293.4,0.9932,0.2073,0.1325,0.4126,8.803
+31TCG,22,283.1,0.9946,0.1683,0.1078,0.3041,3.246
+31TCL,22,416.0,0.9817,0.332,0.2884,0.5296,6.609
+31TDG,22,284.7,0.9891,0.1727,0.1071,0.1907,4.913
+31TDK,22,382.0,0.9814,0.2783,0.2155,0.6542,20.286
+31UCP,22,316.0,0.9813,0.4154,0.417,0.7314,10.605
+ALL,132,329.2,0.9869,0.2624,0.2114,0.4704,9.077
+--- results/runs/E_grid_multi/test_summary.csv
+tile,patches,mean_n_masks,mean_coverage,mean_best_iou,mean_frac_iou_gt_0.5,mean_mask_on_field,mean_gen_seconds
+31TBF,22,40.6,0.6153,0.0802,0.0613,0.5334,1.286
+31TCG,22,36.6,0.6608,0.0671,0.0571,0.4868,1.349
+31TCL,22,124.4,0.5026,0.2185,0.2029,0.6489,1.983
+31TDG,22,47.1,0.598,0.082,0.0674,0.2703,1.543
+31TDK,22,114.2,0.4697,0.1675,0.1456,0.7554,1.842
+31UCP,22,108.6,0.6709,0.3224,0.3235,0.8106,2.393
+ALL,132,78.6,0.5862,0.1563,0.143,0.5842,1.733

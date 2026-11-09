@@ -1,0 +1,20 @@
+[setup] python: /root/.local/bin/cpython-3.14-linux-x86_64-gnu/bin/python
+[setup] torch 2.14.1+cu130 | cuda 13.0 True NVIDIA RTX PRO 6000 Blackwell Server Edition
+[setup] pinned: torch==2.14.1+cu130 torchvision==0.29.1+cu130 
+error: externally-managed-environment
+
+× This environment is externally managed
+╰─> This Python installation is managed by uv and should not be modified.
+
+note: If you believe this is a mistake, please contact your Python installation or OS distribution provider. You can override this, at the risk of breaking your Python installation or OS, by passing --break-system-packages.
+hint: See PEP 668 for the detailed specification.
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+error: externally-managed-environment
+
+× This environment is externally managed
+╰─> This Python installation is managed by uv and should not be modified.
+
+note: If you believe this is a mistake, please contact your Python installation or OS distribution provider. You can override this, at the risk of breaking your Python installation or OS, by passing --break-system-packages.
+hint: See PEP 668 for the detailed specification.
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+[setup] checkpoint: 176M

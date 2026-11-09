@@ -1,0 +1,30 @@
+=== eval test: --weights results/runs/A_loss_select/best_trainable.pt
+loaded trained weights: results/runs/A_loss_select/best_trainable.pt
+/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/torch/jit/_script.py:1485: FutureWarning: `torch.jit.script` is not supported in Python 3.14+ and may break. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+device cuda | points_per_side 16 (256 decoder calls) | pred_iou 0.5 | stability 0.8 | bf16 autocast True | weights results/runs/A_loss_select/best_trainable.pt | -> results/runs/A_loss_select/test_patches.csv
+[10/132] 0.5 s/patch, ETA 1.1 min
+[20/132] 0.5 s/patch, ETA 1.0 min
+[30/132] 0.5 s/patch, ETA 0.8 min
+[40/132] 0.5 s/patch, ETA 0.8 min
+[50/132] 0.5 s/patch, ETA 0.7 min
+[60/132] 0.5 s/patch, ETA 0.6 min
+[70/132] 0.5 s/patch, ETA 0.5 min
+[80/132] 0.5 s/patch, ETA 0.4 min
+[90/132] 0.5 s/patch, ETA 0.4 min
+[100/132] 0.5 s/patch, ETA 0.3 min
+[110/132] 0.6 s/patch, ETA 0.2 min
+[120/132] 0.6 s/patch, ETA 0.1 min
+[130/132] 0.6 s/patch, ETA 0.0 min
+[132/132] 0.6 s/patch, ETA 0.0 min
+wrote results/runs/A_loss_select/test_patches.csv (132 rows)
+wrote results/runs/A_loss_select/test_summary.csv (7 rows)
+
+per-tile summary:
+  31TBF: masks 47.3 | coverage 0.0905 | mean IoU 0.0528 | fields@IoU>0.5 0.0367 | mask-on-field 0.4606
+  31TCG: masks 35.8 | coverage 0.0499 | mean IoU 0.0335 | fields@IoU>0.5 0.028 | mask-on-field 0.3623
+  31TCL: masks 77.0 | coverage 0.1411 | mean IoU 0.1077 | fields@IoU>0.5 0.0966 | mask-on-field 0.6107
+  31TDG: masks 46.5 | coverage 0.0953 | mean IoU 0.0484 | fields@IoU>0.5 0.04 | mask-on-field 0.2303
+  31TDK: masks 75.4 | coverage 0.1372 | mean IoU 0.0855 | fields@IoU>0.5 0.0759 | mask-on-field 0.7169
+  31UCP: masks 99.1 | coverage 0.4085 | mean IoU 0.2232 | fields@IoU>0.5 0.2189 | mask-on-field 0.836
+  ALL: masks 63.5 | coverage 0.1538 | mean IoU 0.0918 | fields@IoU>0.5 0.0827 | mask-on-field 0.5361

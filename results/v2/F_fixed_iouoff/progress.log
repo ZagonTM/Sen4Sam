@@ -1,0 +1,22 @@
+[03:43:29 +0m] START PARALLEL=1 OMP_NUM_THREADS=256 EPOCHS=6 PATIENCE=2 TRAIN_PATCHES=150 SWEEP_LIMIT=40 EVAL_LIMIT=0
+[03:43:29 +0m] START E_grid_multi
+[03:55:06 +11m] OK E_grid_multi (11m37s) log=results/F_fixed_iouoff/logs/E_grid_multi.log
+[03:55:06 +11m] ALL DONE (11 min). Summaries:
+--- results/F_fixed_iouoff/runs/E_grid_multi/test_nofilter_summary.csv
+tile,patches,mean_n_masks,mean_coverage,mean_best_iou,mean_frac_iou_gt_0.5,mean_mask_on_field,mean_gen_seconds
+31TBF,22,444.5,0.9817,0.2496,0.167,0.3818,3.764
+31TCG,22,445.0,0.9844,0.1999,0.1294,0.2594,1.155
+31TCL,22,524.5,0.948,0.3444,0.3081,0.49,0.832
+31TDG,22,448.3,0.9824,0.1927,0.1272,0.168,3.292
+31TDK,22,499.0,0.9484,0.2984,0.2431,0.618,0.618
+31UCP,22,411.3,0.9781,0.4391,0.4577,0.7042,0.524
+ALL,132,462.1,0.9705,0.2874,0.2387,0.4369,1.697
+--- results/F_fixed_iouoff/runs/E_grid_multi/test_summary.csv
+tile,patches,mean_n_masks,mean_coverage,mean_best_iou,mean_frac_iou_gt_0.5,mean_mask_on_field,mean_gen_seconds
+31TBF,22,124.1,0.4528,0.1574,0.1133,0.4748,0.849
+31TCG,22,106.0,0.4187,0.1182,0.0941,0.3886,0.751
+31TCL,22,223.6,0.5276,0.2739,0.2521,0.5569,1.396
+31TDG,22,119.0,0.5037,0.1203,0.0876,0.2117,0.837
+31TDK,22,211.7,0.5094,0.2253,0.1905,0.6921,1.344
+31UCP,22,175.8,0.7551,0.382,0.3936,0.7701,1.518
+ALL,132,160.0,0.5279,0.2129,0.1885,0.5157,1.116

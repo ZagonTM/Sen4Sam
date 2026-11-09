@@ -1,0 +1,15 @@
+=== eval pps64: --limit 40 --points-per-side 64
+/root/.local/bin/cpython-3.14.8-linux-x86_64-gnu/lib/python3.14/site-packages/torch/jit/_script.py:1485: FutureWarning: `torch.jit.script` is not supported in Python 3.14+ and may break. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+device cuda | points_per_side 64 (4096 decoder calls) | pred_iou 0.5 | stability 0.8 | bf16 autocast True | weights pre-trained | -> results/diag/untrained_pps64_patches.csv
+[10/40] 33.7 s/patch, ETA 16.9 min
+[20/40] 26.2 s/patch, ETA 8.7 min
+[30/40] 21.4 s/patch, ETA 3.6 min
+[40/40] 17.9 s/patch, ETA 0.0 min
+wrote results/diag/untrained_pps64_patches.csv (40 rows)
+wrote results/diag/untrained_pps64_summary.csv (3 rows)
+
+per-tile summary:
+  31TBF: masks 146.3 | coverage 0.7357 | mean IoU 0.1637 | fields@IoU>0.5 0.1352 | mask-on-field 0.483
+  31TDG: masks 196.2 | coverage 0.7613 | mean IoU 0.2104 | fields@IoU>0.5 0.1848 | mask-on-field 0.2832
+  ALL: masks 168.8 | coverage 0.7472 | mean IoU 0.1847 | fields@IoU>0.5 0.1575 | mask-on-field 0.3931

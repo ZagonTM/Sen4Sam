@@ -68,12 +68,23 @@ nf_path = first(f"{R}/diag/*nofilter*patches*.csv", f"{R}/diag/*no_filter*patche
 base_nf = rd(nf_path) if nf_path else (MISSING.append(f"{R}/diag/untrained_nofilter_patches.csv") or None)
 
 hist, cfg, tp, tnf = {}, {}, {}, {}
-for sub, label in [("", "lr3e-5"), ("lr1e-5/", "lr1e-5"), ("lr3e-6/", "lr3e-6")]:
-    for r in RUNS:
+VARIANTS = [("", "lr3e-5", RUNS), ("lr1e-5/", "lr1e-5", ["D_random_multi", "E_grid_multi"]),
+            ("lr3e-6/", "lr3e-6", ["D_random_multi", "E_grid_multi"]), ("E_loss/", "E_loss", ["E_grid_multi"]),
+            ("E_noiou/", "E_noiou", ["E_grid_multi"]), ("F_fixed_iouon/", "F_iouon", ["E_grid_multi"]),
+            ("F_fixed_iouoff/", "F_iouoff", ["E_grid_multi"])]
+LRNUM = {"lr3e-5": 3e-5, "lr1e-5": 1e-5, "lr3e-6": 3e-6}
+MAIN = ("lr3e-5",)
+
+
+def pick(d, flat, sub):
+    return first(f"{d}/{sub}/eval_patches.csv", f"{d}/{flat}")
+
+
+for sub, label, runs in VARIANTS:
+    for r in runs:
         d = f"{R}/{sub}runs/{r}"
         if not os.path.isdir(d):
-            if sub == "":
-                MISSING.append(d)
+            MISSING.append(d)
             continue
         key = (r, label)
         hist[key] = rd(f"{d}/history.csv")
@@ -82,11 +93,10 @@ for sub, label in [("", "lr3e-5"), ("lr1e-5/", "lr1e-5"), ("lr3e-6/", "lr3e-6")]
         except Exception:
             cfg[key] = {}
             MISSING.append(f"{d}/config.json")
-        tp[key] = rd(f"{d}/test_patches.csv")
-        pn = first(f"{d}/test_nofilter*patches*.csv")
+        pt = pick(d, "test_patches.csv", "test")
+        tp[key] = rd(pt) if pt else (MISSING.append(f"{d}/test_patches.csv") or None)
+        pn = pick(d, "test_nofilter_patches.csv", "test_nofilter")
         tnf[key] = rd(pn) if pn else (MISSING.append(f"{d}/test_nofilter_patches.csv") or None)
-if not any(k[1] != "lr3e-5" for k in hist):
-    MISSING.append(f"{R}/lr1e-5/runs, {R}/lr3e-6/runs (low-lr follow-up)")
 
 # ---------- 1 ablation
 rows = []
@@ -94,23 +104,29 @@ for key in hist:
     r, lr = key
     h, c, p = hist[key], cfg[key], tp[key]
     be = c.get("best_epoch")
-    g = None
-    if h is not None and "val_gen_mean_best_iou" in h:
-        g = h.set_index("epoch").val_gen_mean_best_iou
-    def ge(e):
-        return g.get(e, np.nan) if g is not None and e is not None else np.nan
+    def ge(e, step=None):
+        if h is None or "val_gen_mean_best_iou" not in h or e is None:
+            return np.nan
+        z = h[h.step == step] if (step is not None and "step" in h) else h[h.epoch == e]
+        return z.val_gen_mean_best_iou.iloc[-1] if len(z) else np.nan
+    def gstep(st):
+        return ge(None, None) if st is None else ge(0, st)
     s, sn = stats(p), stats(tnf[key])
     dl = delta(p, base)
     dn = delta(tnf[key], base_nf)
-    rows.append(dict(run=r, lr=c.get("lr", lr), prompt=c.get("prompt"), tokens=c.get("tokens"), select_by=c.get("select_by"),
+    bst = c.get("best_step")
+    vbest = gstep(bst) if bst is not None else ge(be)
+    rows.append(dict(run=r, variant=lr, lr=c.get("lr", LRNUM.get(lr)), iou_weight=c.get("iou_weight", 1.0),
+                     neg_frac=c.get("neg_frac", 0.0), eval_every=c.get("eval_every"), best_step=bst,
+                     prompt=c.get("prompt"), tokens=c.get("tokens"), select_by=c.get("select_by"),
                      best_epoch=be, epochs_run=c.get("epochs_run"),
                      val_gen_iou_ep0=ge(0), val_gen_iou_ep1=ge(1),
-                     val_gen_iou_best=ge(be), test_iou_filters_on=s["iou"], test_iou_filters_off=sn["iou"],
+                     val_gen_iou_best=vbest, test_iou_filters_on=s["iou"], test_iou_filters_off=sn["iou"],
                      frac_gt05=s["frac"], masks_per_patch=s["masks"], n_test=s["n"],
                      delta_vs_untrained=dl[0], delta_ci_lo=dl[1], delta_ci_hi=dl[2],
                      delta_nofilter_vs_untrained_nofilter=dn[0], delta_nf_ci_lo=dn[1], delta_nf_ci_hi=dn[2]))
 bs = stats(base)
-rows.insert(0, dict(run="untrained", lr=np.nan, prompt="grid16", tokens="-", select_by="-", best_epoch=0,
+rows.insert(0, dict(run="untrained", variant="untrained", lr=np.nan, prompt="grid16", tokens="-", select_by="-", best_epoch=0,
                     val_gen_iou_ep0=np.nan, test_iou_filters_on=bs["iou"], test_iou_filters_off=stats(base_nf)["iou"],
                     frac_gt05=bs["frac"], masks_per_patch=bs["masks"], n_test=bs["n"]))
 abl = pd.DataFrame(rows)
@@ -167,15 +183,17 @@ pp.to_csv(f"{TAB}/pps_sweep.csv", index=False, float_format="%.4f")
 
 # ---------- 3 filters off
 frow = []
-def frow_add(name, on, off):
+def frow_add(name, variant, on, off):
     so, sf = stats(on), stats(off)
     d = delta(off, on)
-    frow.append(dict(model=name, n_on=so["n"], n_off=sf["n"], iou_on=so["iou"], iou_off=sf["iou"],
-                     masks_on=so["masks"], masks_off=sf["masks"], delta_off_minus_on=d[0], ci_lo=d[1], ci_hi=d[2]))
-frow_add("untrained", base, base_nf)
+    d1, d0 = delta(on, base), delta(off, base_nf)
+    frow.append(dict(model=name, variant=variant, n_on=so["n"], n_off=sf["n"], iou_on=so["iou"], iou_off=sf["iou"],
+                     masks_on=so["masks"], masks_off=sf["masks"], delta_off_minus_on=d[0], ci_lo=d[1], ci_hi=d[2],
+                     delta_on_vs_untrained=d1[0], on_ci_lo=d1[1], on_ci_hi=d1[2],
+                     delta_off_vs_untrained_off=d0[0], off_ci_lo=d0[1], off_ci_hi=d0[2]))
+frow_add("untrained", "untrained", base, base_nf)
 for key in hist:
-    if key[1] == "lr3e-5":
-        frow_add(key[0], tp[key], tnf[key])
+    frow_add(key[0], key[1], tp[key], tnf[key])
 fo = pd.DataFrame(frow)
 fo.to_csv(f"{TAB}/filters_off.csv", index=False, float_format="%.4f")
 
@@ -183,9 +201,9 @@ def verdict():
     u = fo[fo.model == "untrained"].iloc[0]
     if np.isnan(u.iou_off):
         return "UNKNOWN: filters-off evals not synced yet."
-    t = fo[(fo.model != "untrained") & fo.iou_off.notna()]
+    t = fo[(fo.model != "untrained") & fo.iou_off.notna() & (fo.variant == "lr3e-5") & (fo.model != "A_loss_select") & (fo.delta_on_vs_untrained.abs() > 1e-6)]
     s = f"Untrained: filters off {u.iou_off:.3f} vs on {u.iou_on:.3f} (masks {u.masks_off:.1f} vs {u.masks_on:.1f}). "
-    if len(t):
+    if len(t) and len(t) == len(t.dropna(subset=["iou_on"])):
         s += "Trained runs: mean filters-off IoU %.3f vs on %.3f. " % (t.iou_off.mean(), t.iou_on.mean())
         gap_on = (t.iou_on - u.iou_on).mean(); gap_off = (t.iou_off - u.iou_off).mean()
         s += f"Mean gap to untrained: {gap_on:+.3f} with filters, {gap_off:+.3f} without. "
@@ -215,16 +233,45 @@ if used:
     nj["pps_sweep_n_patches"] = {f"pps{k}": v[1] for k, v in used.items()} if len(ns) > 1 else ns.pop()
 if not np.isnan(stats(base_nf)["iou"]):
     put(nj, "filters_off_test_iou", round(stats(base_nf)["iou"], 3))
-main = abl[(abl.run != "untrained") & (abl.lr == 3e-5) & (abl.run != "A_loss_select")] if len(abl) > 1 else abl.iloc[0:0]
-best_run = best_iou = None
-if len(main):
-    allep0 = (main.best_epoch == 0).all()
-    if allep0:
-        best_run, best_iou = "none (all runs kept epoch 0 = untrained)", bs["iou"]
-    else:
-        b = main.sort_values("test_iou_filters_on", ascending=False).iloc[0]
-        best_run, best_iou = b.run, b.test_iou_filters_on
-    put(nj, "best_v2_run", best_run); put(nj, "best_v2_test_iou", round(float(best_iou), 3))
+cand = abl[(abl.run != "untrained") & abl.delta_vs_untrained.notna() & (abl.delta_vs_untrained > 1e-6)]
+if len(cand):
+    b = cand.sort_values("test_iou_filters_on", ascending=False).iloc[0]
+    nj["best_v2_run"] = f"{b.run} [{b.variant}]"; nj["best_v2_test_iou"] = round(float(b.test_iou_filters_on), 3)
+def ab(run, var):
+    z = abl[(abl.run == run) & (abl.variant == var)]
+    return z.iloc[0] if len(z) else None
+def setk(k, v):
+    ok = v is not None and not (isinstance(v, float) and np.isnan(v))
+    if ok:
+        nj[k] = round(float(v), 4) if isinstance(v, (float, np.floating)) else v
+    elif k not in nj or (isinstance(nj[k], str) and nj[k].startswith("{{")):
+        nj[k] = "{{" + k.upper() + "}}"
+setk("filters_off_masks_per_patch", stats(base_nf)["masks"] if base_nf is not None else None)
+setk("filters_on_masks_per_patch", bs["masks"])
+for nm, var, pre in [("e_noiou", "E_noiou", "e_noiou"), ("e_loss", "E_loss", "e_loss"), ("f_iouoff", "F_iouoff", "f_iouoff"), ("f_iouon", "F_iouon", "f_iouon")]:
+    r_ = ab("E_grid_multi", var)
+    if r_ is None:
+        continue
+    if nm == "e_noiou":
+        setk("e_noiou_val_gen_best", r_.val_gen_iou_best)
+        setk("e_noiou_test_delta", r_.delta_vs_untrained)
+        setk("e_noiou_test_delta_ci", fmt_ci((r_.delta_vs_untrained, r_.delta_ci_lo, r_.delta_ci_hi)) or None)
+    if nm == "f_iouon":
+        setk("f_iouon_val_gen_best", r_.val_gen_iou_best)
+    if nm != "f_iouon":
+        setk(f"{pre}_test_iou", r_.test_iou_filters_on)
+    if nm in ("e_noiou", "e_loss"):
+        setk(f"{pre}_test_nofilter_iou", r_.test_iou_filters_off)
+al = ab("A_loss_select", "lr3e-5")
+if al is not None:
+    setk("a_loss_select_nofilter_iou", al.test_iou_filters_off)
+p32 = pps.get((32, "full132"))
+setk("pps32_full132_iou", stats(p32)["iou"] if p32 is not None and len(p32) >= 132 else None)
+for k in ("a_loss_select_nofilter_iou", "e_noiou_val_gen_best", "e_noiou_test_iou", "e_noiou_test_delta", "e_noiou_test_delta_ci",
+          "e_noiou_test_nofilter_iou", "f_iouoff_test_iou", "f_iouon_val_gen_best", "e_loss_test_iou", "e_loss_test_nofilter_iou",
+          "pps32_full132_iou", "filters_off_masks_per_patch", "filters_on_masks_per_patch"):
+    if k not in nj:
+        nj[k] = "{{" + k.upper() + "}}"
 ls = abl[abl.run == "A_loss_select"]
 if len(ls) and not np.isnan(ls.test_iou_filters_on.iloc[0]):
     put(nj, "v2_loss_select_test_iou", round(float(ls.test_iou_filters_on.iloc[0]), 3))
@@ -266,6 +313,56 @@ if u0 is not None:
 ax.set_xlabel("epoch"); ax.set_ylabel("val generator mean best IoU"); ax.set_title("Generator metric on val (12 patches) per epoch")
 ax.legend(frameon=False, fontsize=7, ncol=2); fig.tight_layout(); fig.savefig(f"{FIG}/ablation_val_curves.png", dpi=150); plt.close(fig)
 
+# key figure: val generator IoU vs optimizer steps
+def xs(key):
+    h, c = hist[key], cfg[key]
+    if "step" in h and h.step.notna().any():
+        return h.step.values, "step"
+    spe = (c.get("train_parcels") / c.get("accum", 1)) if c.get("train_parcels") else None
+    return (h.epoch.values * spe, "est") if spe else (h.epoch.values, "epoch")
+fig, ax = plt.subplots(figsize=(8, 4.5))
+curves = [(("E_grid_multi", "lr3e-5"), "E grid, IoU loss on (lr 3e-5)", "#D55E00", "-"),
+          (("E_grid_multi", "E_noiou"), "E grid, IoU loss off (lr 3e-5)", "#0072B2", "-"),
+          (("E_grid_multi", "F_iouon"), "F fixed, IoU on (lr 1e-5, neg 0.3)", "#CC79A7", "--"),
+          (("E_grid_multi", "F_iouoff"), "F fixed, IoU off (lr 1e-5, neg 0.3)", "#009E73", "--"),
+          (("E_grid_multi", "lr1e-5"), "E grid lr 1e-5", "#E69F00", ":"),
+          (("E_grid_multi", "lr3e-6"), "E grid lr 3e-6", "#56B4E9", ":"),
+          (("D_random_multi", "lr1e-5"), "D random lr 1e-5", "#999999", ":"),
+          (("D_random_multi", "lr3e-6"), "D random lr 3e-6", "#666666", ":")]
+approx = False
+for key, lab, col, ls2 in curves:
+    h = hist.get(key)
+    if h is None or "val_gen_mean_best_iou" not in h:
+        continue
+    x, kind = xs(key); approx |= kind == "est"
+    m = h.val_gen_mean_best_iou.notna().values
+    ax.plot(np.asarray(x)[m], h.val_gen_mean_best_iou.values[m], ls2, marker="o", ms=3, color=col, label=lab)
+u0 = base_gen = 0.1212
+ax.axhline(u0, color="k", ls="--", lw=1, label="untrained = 0.121")
+ax.set_xlabel("optimizer steps" + (" (epoch rows converted: epoch x train_parcels/accum, batch 1)" if approx else ""))
+ax.set_ylabel("val generator mean best IoU (12 patches)")
+ax.set_title("Training the IoU head breaks the generator")
+ax.legend(frameon=False, fontsize=7); fig.tight_layout(); fig.savefig(f"{FIG}/val_gen_curves.png", dpi=150); plt.close(fig)
+
+# filters on/off bars
+fb = fo[fo.iou_on.notna() & fo.iou_off.notna() & fo.variant.isin(["untrained", "lr3e-5", "E_loss", "E_noiou", "F_iouoff"])]
+fb = fb[(fb.variant == "untrained") | ((fb.model == "A_loss_select") & (fb.variant == "lr3e-5")) |
+        ((fb.model == "E_grid_multi") & fb.variant.isin(["E_loss", "E_noiou", "F_iouoff"]))]
+if len(fb):
+    fig, ax = plt.subplots(figsize=(7.5, 4.2))
+    xx = np.arange(len(fb)); w = 0.38
+    ax.bar(xx - w / 2, fb.iou_on, w, color="#0072B2", label="filters on")
+    ax.bar(xx + w / 2, fb.iou_off, w, color="#E69F00", label="filters off")
+    for i_, r_ in enumerate(fb.itertuples()):
+        ax.text(i_ - w / 2, r_.iou_on, f"{r_.iou_on:.3f}\n{r_.masks_on:.0f} m/p", ha="center", va="bottom", fontsize=7)
+        ax.text(i_ + w / 2, r_.iou_off, f"{r_.iou_off:.3f}\n{r_.masks_off:.0f} m/p", ha="center", va="bottom", fontsize=7)
+    ax.set_xticks(xx); ax.set_xticklabels([("untrained" if r_.variant == "untrained" else r_.variant if r_.model == "E_grid_multi" else r_.model) for r_ in fb.itertuples()], fontsize=8)
+    ax.set_ylabel("test mean best IoU (132 patches)"); ax.set_title("Filters on vs off (m/p = masks per patch)")
+    ax.set_ylim(0, max(fb.iou_on.max(), fb.iou_off.max()) * 1.25); ax.legend(frameon=False)
+    fig.tight_layout(); fig.savefig(f"{FIG}/filters_off.png", dpi=150); plt.close(fig)
+else:
+    MISSING.append("figure filters_off.png (no filters-off data)")
+
 # ---------- summary.md
 def md(df):
     if df is None or not len(df):
@@ -279,7 +376,7 @@ def md(df):
     return h + "\n".join("| " + " | ".join(str(v) for v in r) + " |" for r in df.values)
 
 def g(run, lr="lr3e-5"):
-    r = abl[(abl.run == run) & (abl.lr == {"lr3e-5": 3e-5, "lr1e-5": 1e-5, "lr3e-6": 3e-6}[lr])]
+    r = abl[(abl.run == run) & (abl.variant == lr)]
     return r.iloc[0] if len(r) else None
 
 def pv(k, grp="ALL", s=sub):
@@ -333,13 +430,41 @@ for n, run in zip(range(3, 9), ["A_centroid_tok0", "B_centroid_multi", "C_random
         res = fn()
     B.append(l + res)
 # follow-up
-fu = abl[(abl.lr < 3e-5) & abl.run.isin(["D_random_multi", "E_grid_multi"])]
+fu = abl[abl.variant.isin(["lr1e-5", "lr3e-6"]) & abl.test_iou_filters_on.notna()]
 if len(fu):
-    parts = [f"{r.run}@{r.lr:g}: delta {r.delta_vs_untrained:+.4f}, best_epoch {r.best_epoch}" for r in fu.itertuples()]
+    parts = [f"{r.run}@{r.lr:g}: delta {r.delta_vs_untrained:+.4f} {fmt_ci((r.delta_vs_untrained, r.delta_ci_lo, r.delta_ci_hi))}, best_epoch {r.best_epoch}, val gen ep0 {r.val_gen_iou_ep0:.3f} -> best {r.val_gen_iou_best:.3f}" for r in fu.itertuples()]
     ok = (fu.delta_vs_untrained.abs() < 0.01).all()
     B.append("9. Low-lr follow-up: " + "; ".join(parts) + f". Prediction (|delta|<0.01): {'CONFIRMED' if ok else 'REFUTED'} so far (partial).")
 else:
     B.append("9. Low-lr follow-up: no data yet.")
+
+def d_(r, nf=False):
+    if r is None:
+        return None
+    return (r.delta_nofilter_vs_untrained_nofilter, r.delta_nf_ci_lo, r.delta_nf_ci_hi) if nf else (r.delta_vs_untrained, r.delta_ci_lo, r.delta_ci_hi)
+def ok_(x):
+    return x is not None and not np.isnan(x)
+EL, EN, FOFF, FON, AL = g("E_grid_multi", "E_loss"), g("E_grid_multi", "E_noiou"), g("E_grid_multi", "F_iouoff"), g("E_grid_multi", "F_iouon"), g("A_loss_select")
+t10 = []
+if EL is not None:
+    t10.append(f"(a) E_loss (trained weights, val-loss selected): filters on {EL.test_iou_filters_on:.3f} (masks {EL.masks_per_patch:.1f}), "
+               f"delta {fmt_ci(d_(EL))}; filters off {EL.test_iou_filters_off:.3f}, delta vs untrained-off {fmt_ci(d_(EL, True)) or 'pending'}")
+    if ok_(EL.delta_nofilter_vs_untrained_nofilter):
+        t10.append("prediction |delta_off|<0.01: " + ("CONFIRMED" if abs(EL.delta_nofilter_vs_untrained_nofilter) < 0.01 else "REFUTED"))
+if EN is not None:
+    t10.append(f"(b) E_noiou: val gen best {EN.val_gen_iou_best:.3f}, test {EN.test_iou_filters_on:.3f}, delta {fmt_ci(d_(EN))}, off {EN.test_iou_filters_off:.3f}")
+    if EL is not None and ok_(EN.delta_vs_untrained) and ok_(EL.delta_vs_untrained):
+        t10.append("prediction (b loses less than E): " + ("CONFIRMED" if EN.delta_vs_untrained > EL.delta_vs_untrained else "REFUTED"))
+B.append("10. Bug-vs-finding: " + ("; ".join(t10) if t10 else "no data yet."))
+t11 = []
+for nm, r_ in (("F_iouon", FON), ("F_iouoff", FOFF)):
+    if r_ is not None:
+        t11.append(f"{nm}: val gen ep0 {r_.val_gen_iou_ep0:.3f} -> best {r_.val_gen_iou_best:.3f} (step {r_.best_step}), test {r_.test_iou_filters_on:.3f}, delta {fmt_ci(d_(r_)) or 'pending'}")
+        if ok_(r_.delta_vs_untrained):
+            t11.append(("in +0.005..+0.02 or tie: " + ("CONFIRMED" if -0.005 <= r_.delta_vs_untrained <= 0.02 else ("REFUTED (better)" if r_.delta_vs_untrained > 0.02 else "REFUTED (worse)"))))
+B.append("11. F_fixed: " + ("; ".join(t11) if t11 else "no data yet.") + ". pps64 gap (+0.10 on 40-patch subset) not closed by any trained run." )
+if AL is not None and ok_(AL.test_iou_filters_off):
+    B[0] += f" v1-style model (A_loss_select) filters off: {AL.test_iou_filters_off:.3f} vs on {AL.test_iou_filters_on:.3f} vs untrained-off {stats(base_nf)['iou']:.3f} ({'recovers' if AL.test_iou_filters_off > AL.test_iou_filters_on + 0.02 else 'no recovery'})."
 
 txt = f"""# v2 results summary (auto-generated by analysis/v2_analysis.py)
 
