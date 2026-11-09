@@ -141,6 +141,15 @@ are filled in later, without editing the prediction.
      scores), so more masks fall under the fixed 0.5 threshold.
    - Result:
 
+11. **Design-fix run F_fixed, added 2026-11-08 22:42 UTC-5 before results:** grid prompts,
+   tokens 1-3, background grid points as negatives (target empty mask, IoU 0; --neg-frac 0.3),
+   IoU-head loss off or on as decided by E_noiou, lr 1e-5, generator metric every 300 steps.
+   - Prediction: beats the frozen model by a small margin (+0.005 to +0.02 mean best IoU) or ties;
+     it will not close the gap to pps=64 (+0.10 on the 40-patch subset).
+   - Reason: fixes the train/inference mismatch (background clicks, tokens, step count), but the
+     grid still misses most small parcels, so the prompt remains the bottleneck.
+   - Result:
+
 What each result would refute: if D does not beat A, prompt/token alignment is not the factor;
 if the grid sweep beats every trained run, the bottleneck is prompt density, not the decoder.
 

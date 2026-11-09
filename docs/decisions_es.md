@@ -303,6 +303,17 @@ val (salvo `A_loss_select`). Las líneas "Resultado:" se llenan después, sin ed
      puntuaciones optimistas de SAM), y más máscaras quedan bajo el umbral fijo 0.5.
    - Resultado:
 
+11. **Corrida con correcciones de diseño F_fixed, añadida 2026-11-08 22:42 UTC-5 antes de
+   resultados:** prompts de rejilla, tokens 1–3, puntos de rejilla sobre fondo como negativos
+   (máscara objetivo vacía, IoU 0; --neg-frac 0.3), pérdida de la cabeza IoU apagada o encendida
+   según E_noiou, lr 1e-5, métrica del generador cada 300 pasos.
+   - Predicción: supera al modelo congelado por poco (+0.005 a +0.02 de IoU medio) o empata; no
+     cierra la brecha con pps=64 (+0.10 en el subconjunto de 40 parches).
+   - Razón: corrige el desajuste entrenamiento/inferencia (clics de fondo, tokens, número de pasos),
+     pero la rejilla sigue sin tocar la mayoría de parcelas pequeñas: el prompt sigue siendo el
+     cuello de botella.
+   - Resultado:
+
 Hipótesis que cada resultado refuta: si D no supera a A, la alineación de prompt/token no es
 el factor; si el barrido de rejilla supera a todas las corridas entrenadas, el cuello de
 botella es la densidad del prompt y no el decodificador.
